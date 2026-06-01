@@ -1,0 +1,148 @@
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
+import { Toaster } from '@/components/ui/toaster';
+import { AppLayout } from '@/components/layout/AppLayout';
+
+// Pages
+import LoginPage from '@/pages/LoginPage';
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
+import DashboardPage from '@/pages/DashboardPage';
+import AttendancePage from '@/pages/AttendancePage';
+import QRCheckInPage from '@/pages/QRCheckInPage';
+import ReportsPage from '@/pages/ReportsPage';
+import StudentsPage from '@/pages/StudentsPage';
+import ProfilePage from '@/pages/ProfilePage';
+import AdminPage from '@/pages/AdminPage';
+import SchedulePage from '@/pages/SchedulePage';
+import NotFoundPage from '@/pages/NotFoundPage';
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuthStore();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">กำลังโหลด...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { profile } = useAuthStore();
+  if (!profile || !['admin', 'teacher'].includes(profile.role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+}
+
+export default function App() {
+  const { setUser, setProfile, setLoading, theme } = useAuthStore();
+  const navigate = useNavigate();
+
+  // Apply theme on mount
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
+
+  // Auth state listener — THE FIX for login not redirecting
+  useEffect(() => {
+    setLoading(true);
+
+    // Get initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        const { data } = await supabase
+          .from('profiles')
+          .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
+          .eq('id', session.user.id)
+          .single();
+        if (data) setProfile(data);
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        setUser(session.user);
+        const { data } = await supabase
+          .from('profiles')
+          .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
+          .eq('id', session.user.id)
+          .single();
+        if (data) setProfile(data);
+        setLoading(false);
+        // Navigate to dashboard after sign in
+        navigate('/dashboard', { replace: true });
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        navigate('/login', { replace: true });
+      } else if (event === 'PASSWORD_RECOVERY') {
+        navigate('/reset-password', { replace: true });
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        setUser(session.user);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setUser, setProfile, setLoading, navigate]);
+
+  return (
+    <>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/qr/:token" element={<QRCheckInPage />} />
+
+        {/* Protected routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="attendance" element={<AttendancePage />} />
+          <Route path="schedule" element={<SchedulePage />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route
+            path="students"
+            element={<AdminRoute><StudentsPage /></AdminRoute>}
+          />
+          <Route
+            path="admin"
+            element={<AdminRoute><AdminPage /></AdminRoute>}
+          />
+        </Route>
+
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+      <Toaster />
+    </>
+  );
+}

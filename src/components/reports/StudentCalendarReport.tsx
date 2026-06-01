@@ -1,0 +1,314 @@
+import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, X, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
+import { supabase } from '@/lib/supabase';
+import { Profile, AttendanceRecord, ATTENDANCE_STATUS_LABELS, SESSION_TYPE_LABELS } from '@/types';
+import { getAvatarFallback, calculateAttendanceRate, formatThaiDate, formatTime } from '@/lib/utils';
+
+interface Props {
+  student: Profile;
+  onClose: () => void;
+}
+
+interface DayRecord {
+  date: string;
+  sessions: {
+    session: { id: string; session_type: string; start_time: string; end_time: string; description: string | null };
+    record: AttendanceRecord | null;
+  }[];
+}
+
+const STATUS_COLOR: Record<string, string> = {
+  present: 'bg-green-500',
+  absent: 'bg-red-500',
+  late: 'bg-yellow-500',
+  excused: 'bg-blue-500',
+  none: 'bg-muted',
+};
+
+const STATUS_BG: Record<string, string> = {
+  present: 'bg-green-500/10 border-green-500/30 text-green-400',
+  absent: 'bg-red-500/10 border-red-500/30 text-red-400',
+  late: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
+  excused: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+};
+
+export function StudentCalendarReport({ student, onClose }: Props) {
+  const [viewDate, setViewDate] = useState(new Date());
+  const [dayRecords, setDayRecords] = useState<Record<string, DayRecord>>({});
+  const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  useEffect(() => { loadMonthData(); }, [year, month, student.id]);
+  useEffect(() => { loadAllRecords(); }, [student.id]);
+
+  const loadAllRecords = async () => {
+    const { data } = await supabase
+      .from('attendance_records')
+      .select('*, session:practice_sessions(*)')
+      .eq('student_id', student.id);
+    setAllRecords(data || []);
+  };
+
+  const loadMonthData = async () => {
+    setLoading(true);
+    const start = new Date(year, month, 1).toISOString().split('T')[0];
+    const end = new Date(year, month + 1, 0).toISOString().split('T')[0];
+
+    const [{ data: sessions }, { data: records }] = await Promise.all([
+      supabase.from('practice_sessions').select('*').gte('date', start).lte('date', end).order('date').order('start_time'),
+      supabase.from('attendance_records').select('*, session:practice_sessions(*)')
+        .eq('student_id', student.id)
+        .gte('created_at', `${start}T00:00:00`)
+        .lte('created_at', `${end}T23:59:59`),
+    ]);
+
+    const map: Record<string, DayRecord> = {};
+    (sessions || []).forEach(session => {
+      if (!map[session.date]) map[session.date] = { date: session.date, sessions: [] };
+      const record = (records || []).find(r => r.session_id === session.id) || null;
+      map[session.date].sessions.push({ session, record });
+    });
+    setDayRecords(map);
+    setLoading(false);
+  };
+
+  // Build calendar grid
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startPad = firstDay === 0 ? 6 : firstDay - 1; // Mon-start grid
+
+  const cells: (number | null)[] = [
+    ...Array(startPad).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const getDayStatus = (day: number): string => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dr = dayRecords[dateStr];
+    if (!dr) return 'none';
+    const statuses = dr.sessions.map(s => s.record?.status || 'absent');
+    if (statuses.every(s => s === 'present')) return 'present';
+    if (statuses.some(s => s === 'absent')) return 'absent';
+    if (statuses.some(s => s === 'late')) return 'late';
+    if (statuses.every(s => s === 'excused')) return 'excused';
+    return 'none';
+  };
+
+  const hasSession = (day: number): boolean => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return !!dayRecords[dateStr];
+  };
+
+  const today = new Date().toISOString().split('T')[0];
+  const todayNum = new Date().getDate();
+  const isCurrentMonth = year === new Date().getFullYear() && month === new Date().getMonth();
+
+  // Overall stats
+  const totalPresent = allRecords.filter(r => r.status === 'present').length;
+  const totalLate = allRecords.filter(r => r.status === 'late').length;
+  const totalAbsent = allRecords.filter(r => r.status === 'absent').length;
+  const totalExcused = allRecords.filter(r => r.status === 'excused').length;
+  const totalAll = allRecords.length;
+  const rate = calculateAttendanceRate(totalPresent + totalLate, totalAll);
+
+  const thaiMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+    'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  const selectedDateStr = selectedDay
+    ? `${year}-${String(month + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`
+    : null;
+  const selectedDayRecord = selectedDateStr ? dayRecords[selectedDateStr] : null;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+      <div className="bg-card border border-border rounded-xl w-full max-w-2xl shadow-2xl animate-fade-in my-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <Avatar className="w-10 h-10">
+              <AvatarImage src={student.profile_picture_url || ''} alt={student.full_name} />
+              <AvatarFallback className="bg-brand-500/20 text-brand-400 font-semibold">
+                {getAvatarFallback(student.full_name)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-bold text-sm">{student.full_name}</p>
+              <p className="text-xs text-muted-foreground">
+                {student.nickname && `"${student.nickname}" • `}
+                {student.instrument?.name || 'ไม่ระบุเครื่อง'}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {/* Stats row */}
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { label: 'มา', value: totalPresent, color: 'text-green-400', bg: 'bg-green-500/10' },
+              { label: 'สาย', value: totalLate, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+              { label: 'ขาด', value: totalAbsent, color: 'text-red-400', bg: 'bg-red-500/10' },
+              { label: 'ลา', value: totalExcused, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+            ].map(s => (
+              <div key={s.label} className={`${s.bg} rounded-lg p-2 text-center`}>
+                <p className={`text-lg font-bold leading-none ${s.color}`}>{s.value}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Attendance rate bar */}
+          <div>
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-muted-foreground">อัตราเข้าร่วม (รวมทั้งหมด)</span>
+              <span className={`font-bold ${rate >= 80 ? 'text-green-400' : rate >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>{rate}%</span>
+            </div>
+            <Progress value={rate} className="h-2" />
+          </div>
+
+          {/* Month navigator */}
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setViewDate(new Date(year, month - 1, 1))}>
+              <ChevronLeft size={16} />
+            </Button>
+            <span className="text-sm font-semibold">
+              {thaiMonths[month]} {year + 543}
+            </span>
+            <Button
+              variant="ghost" size="sm" className="h-8 w-8 p-0"
+              onClick={() => setViewDate(new Date(year, month + 1, 1))}
+              disabled={isCurrentMonth}
+            >
+              <ChevronRight size={16} />
+            </Button>
+          </div>
+
+          {/* Calendar grid */}
+          <div>
+            {/* Day headers */}
+            <div className="grid grid-cols-7 mb-1">
+              {['จ','อ','พ','พฤ','ศ','ส','อา'].map(d => (
+                <div key={d} className="text-center text-[10px] text-muted-foreground py-1 font-medium">{d}</div>
+              ))}
+            </div>
+
+            {/* Day cells */}
+            <div className="grid grid-cols-7 gap-0.5">
+              {cells.map((day, i) => {
+                if (!day) return <div key={i} />;
+                const status = getDayStatus(day);
+                const hasSess = hasSession(day);
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = dateStr === today;
+                const isSelected = selectedDay === day;
+                const isFuture = new Date(dateStr) > new Date();
+
+                return (
+                  <button
+                    key={i}
+                    onClick={() => hasSess ? setSelectedDay(isSelected ? null : day) : undefined}
+                    className={`
+                      relative aspect-square rounded-lg flex flex-col items-center justify-center text-xs transition-all
+                      ${hasSess ? 'cursor-pointer hover:ring-1 hover:ring-brand-500/50' : 'cursor-default'}
+                      ${isSelected ? 'ring-2 ring-brand-500' : ''}
+                      ${isToday ? 'ring-1 ring-brand-400' : ''}
+                      ${isFuture ? 'opacity-40' : ''}
+                      ${hasSess && !isFuture ? STATUS_BG[status] || 'bg-muted/30' : 'bg-transparent'}
+                    `}
+                  >
+                    <span className={`font-medium text-[11px] leading-none ${isToday ? 'text-brand-400' : ''}`}>{day}</span>
+                    {hasSess && !isFuture && (
+                      <div className={`w-1 h-1 rounded-full mt-0.5 ${STATUS_COLOR[status]}`} />
+                    )}
+                    {hasSess && isFuture && (
+                      <div className="w-1 h-1 rounded-full mt-0.5 bg-muted-foreground/30" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-3 mt-3 justify-center">
+              {[
+                { color: 'bg-green-500', label: 'มาซ้อม' },
+                { color: 'bg-yellow-500', label: 'มาสาย' },
+                { color: 'bg-red-500', label: 'ขาดซ้อม' },
+                { color: 'bg-blue-500', label: 'ลา' },
+                { color: 'bg-muted', label: 'ไม่มีซ้อม' },
+              ].map(l => (
+                <div key={l.label} className="flex items-center gap-1">
+                  <div className={`w-2 h-2 rounded-full ${l.color}`} />
+                  <span className="text-[10px] text-muted-foreground">{l.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Selected day detail */}
+          {selectedDay && selectedDayRecord && (
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="px-3 py-2 bg-muted/40 border-b border-border">
+                <p className="text-xs font-semibold">
+                  รายละเอียดวันที่ {selectedDay} {thaiMonths[month]} {year + 543}
+                </p>
+              </div>
+              <div className="divide-y divide-border/50">
+                {selectedDayRecord.sessions.map(({ session, record }, i) => (
+                  <div key={i} className="px-3 py-2.5 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium">
+                        {session.description || SESSION_TYPE_LABELS[session.session_type as keyof typeof SESSION_TYPE_LABELS]}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Clock size={9} />
+                        {formatTime(session.start_time)} - {formatTime(session.end_time)}
+                      </p>
+                      {record?.reason && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">เหตุผล: {record.reason}</p>
+                      )}
+                      {record?.check_in_time && (
+                        <p className="text-[10px] text-muted-foreground">
+                          เช็คเวลา {new Date(record.check_in_time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
+                          {record.gps_verified && ' ✓GPS'}
+                        </p>
+                      )}
+                      {record?.teacher_override && (
+                        <Badge variant="info" className="text-[9px] mt-0.5">ครูแก้ไข</Badge>
+                      )}
+                    </div>
+                    <div>
+                      {record ? (
+                        <Badge variant={
+                          record.status === 'present' ? 'success' :
+                          record.status === 'late' ? 'warning' :
+                          record.status === 'excused' ? 'info' : 'destructive'
+                        } className="text-xs">
+                          {ATTENDANCE_STATUS_LABELS[record.status]}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">ไม่มีข้อมูล</Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
