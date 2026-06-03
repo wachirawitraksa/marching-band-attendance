@@ -132,3 +132,20 @@ export interface AcademicTerm {
   created_by: string | null;
   created_at: string;
 }
+
+export interface Holiday {
+  id: string;
+  date: string;
+  description: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface HolidayRange {
+  id: string;
+  start_date: string;
+  end_date: string;
+  label: string;
+  created_by: string | null;
+  created_at: string;
+}

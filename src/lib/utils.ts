@@ -1,22 +1,52 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { format, parseISO } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { parseISO } from 'date-fns';
 import { AttendanceStatus, SessionType } from '@/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: string | Date, fmt = 'dd MMM yyyy'): string {
-  const d = typeof date === 'string' ? parseISO(date) : date;
-  return format(d, fmt, { locale: th });
+/** แปลง Date เป็น วว/ดด/ปปปป (พ.ศ.) เช่น 05/06/2569 */
+function toBE(d: Date): string {
+  // ใช้ UTC เพื่อป้องกัน timezone shift
+  const day   = String(d.getUTCDate()).padStart(2, '0');
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const year  = d.getUTCFullYear() + 543;
+  return `${day}/${month}/${year}`;
 }
 
+/** แปลง date string/Date → Date object (UTC-safe) */
+function toDate(date: string | Date): Date {
+  if (date instanceof Date) return date;
+  // ISO date only "YYYY-MM-DD" → parse as UTC noon to avoid timezone shift
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return new Date(date + 'T12:00:00Z');
+  }
+  return parseISO(date);
+}
+
+/** เดิมชื่อ formatDate — ตอนนี้คืน วว/ดด/ปปปป พ.ศ. */
+export function formatDate(date: string | Date): string {
+  return toBE(toDate(date));
+}
+
+/**
+ * แก้ปัญหา Windows Thai locale ส่ง input date value เป็น พ.ศ. (2569-06-05)
+ * แทน ค.ศ. (2026-06-05) → ตรวจสอบและแปลงกลับก่อนใช้
+ */
+export function normalizeInputDate(value: string): string {
+  if (!value) return value;
+  const [yearStr, month, day] = value.split('-');
+  const year = parseInt(yearStr, 10);
+  // ถ้าปี > 2400 แสดงว่าเป็น พ.ศ. → ลบ 543
+  const ceYear = year > 2400 ? year - 543 : year;
+  return `${ceYear}-${month}-${day}`;
+}
+
+/** วว/ดด/ปปปป พ.ศ. — ใช้ทั่วทั้งระบบ */
 export function formatThaiDate(date: string | Date): string {
-  const d = typeof date === 'string' ? parseISO(date) : date;
-  const buddhistYear = d.getFullYear() + 543;
-  return format(d, `dd MMMM ${buddhistYear}`, { locale: th });
+  return toBE(toDate(date));
 }
 
 export function formatTime(time: string): string {
@@ -24,9 +54,13 @@ export function formatTime(time: string): string {
   return `${h}:${m} น.`;
 }
 
+/** วว/ดด/ปปปป พ.ศ. HH:mm เช่น 05/06/2569 07:30 */
 export function formatDatetime(datetime: string): string {
   const d = parseISO(datetime);
-  return format(d, 'dd/MM/yyyy HH:mm', { locale: th });
+  const datePart = toBE(d);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${datePart} ${hh}:${mm}`;
 }
 
 export function getDayOfWeekThai(date: Date | string): string {
@@ -46,7 +80,7 @@ export function isWithinAttendanceWindow(sessionType: SessionType, date?: Date):
     // Mon-Fri (1-5): 05:00-08:30
     if (dayOfWeek < 1 || dayOfWeek > 5) return false;
     const start = 5 * 60; // 05:00
-    const end = 8 * 60 + 30; // 08:30
+    const end = 8 * 60; // 08:00
     return totalMinutes >= start && totalMinutes <= end;
   }
 
@@ -54,7 +88,7 @@ export function isWithinAttendanceWindow(sessionType: SessionType, date?: Date):
     // Thursday (4): 15:20-16:10
     if (dayOfWeek !== 4) return false;
     const start = 15 * 60 + 20; // 15:20
-    const end = 16 * 60 + 10; // 16:10
+    const end = 15 * 60 + 45; // 15:45
     return totalMinutes >= start && totalMinutes <= end;
   }
 

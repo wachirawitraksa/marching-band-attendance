@@ -11,7 +11,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
     /* primary → brand blue #2d8912 */
-    --primary: 104 77% 30%;
+    --primary: 185 66% 25%;
     --primary-foreground: 200 100% 97%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -35,7 +35,7 @@
     --popover: 222 47% 9%;
     --popover-foreground: 210 40% 98%;
     /* primary → brand blue #2d8912 */
-    --primary: 104 77% 30%;
+    --primary: 185 66% 25%;
     --primary-foreground: 200 100% 97%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -73,10 +73,10 @@
 @layer components {
   /* Brand blue glow (replaces gold-glow) */
   .gold-glow {
-    box-shadow: 0 0 20px rgba(45, 137, 18, 0.35);
+    box-shadow: 0 0 20px rgba(23, 99, 106, 0.35);
   }
   .gold-glow-sm {
-    box-shadow: 0 0 10px rgba(45, 137, 18, 0.2);
+    box-shadow: 0 0 10px rgba(23, 99, 106, 0.2);
   }
 
   .status-dot { @apply w-2 h-2 rounded-full inline-block; }
@@ -108,7 +108,7 @@
 }
 
 .animated-bg {
-  background: linear-gradient(-45deg, #071507, #0d1f0a, #071a05, #071507);
+  background: linear-gradient(-45deg, #050f10, #091a1c, #071518, #050f10);
   background-size: 400% 400%;
   animation: gradientShift 12s ease infinite;
 }

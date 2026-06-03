@@ -427,9 +427,13 @@ export default function ProfilePage() {
                 <p>
                   สมัครเมื่อ:{' '}
                   <span className="text-foreground">
-                    {new Date(profile.created_at).toLocaleDateString('th-TH', {
-                      year: 'numeric', month: 'long', day: 'numeric',
-                    })}
+                    {(() => {
+                    const d = new Date(profile.created_at);
+                    const day = String(d.getDate()).padStart(2,'0');
+                    const month = String(d.getMonth()+1).padStart(2,'0');
+                    const year = d.getFullYear() + 543;
+                    return `${day}/${month}/${year}`;
+                  })()}
                   </span>
                 </p>
               </div>
