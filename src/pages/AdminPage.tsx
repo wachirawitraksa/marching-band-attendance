@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Settings, UserPlus, Users, Loader2, Eye, EyeOff,
-  RefreshCw, Shield, Music, BookOpen
+  RefreshCw, Shield, Music, BookOpen, MapPin
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { getAvatarFallback } from '@/lib/utils';
 import { Profile, Section, Instrument, Role, ROLE_LABELS } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { SemesterManager } from '@/components/admin/SemesterManager';
+import { GPSSettingsManager } from '@/components/admin/GPSSettingsManager';
 
 interface CreateUserForm {
   email: string; password: string; full_name: string; nickname: string;
@@ -203,10 +204,11 @@ export default function AdminPage() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="w-full md:w-auto grid grid-cols-3 md:flex">
+        <TabsList className="w-full md:w-auto grid grid-cols-4 md:flex">
           <TabsTrigger value="users" className="gap-1.5 text-xs"><Users size={13} /> บัญชี ({users.length})</TabsTrigger>
           <TabsTrigger value="semester" className="gap-1.5 text-xs"><BookOpen size={13} /> ภาคเรียน</TabsTrigger>
           <TabsTrigger value="sections" className="gap-1.5 text-xs"><Music size={13} /> Section</TabsTrigger>
+          <TabsTrigger value="gps" className="gap-1.5 text-xs"><MapPin size={13} /> GPS</TabsTrigger>
         </TabsList>
 
         {/* USERS TAB */}
@@ -306,6 +308,11 @@ export default function AdminPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* GPS SETTINGS TAB */}
+        <TabsContent value="gps" className="mt-4">
+          <GPSSettingsManager />
         </TabsContent>
       </Tabs>
 

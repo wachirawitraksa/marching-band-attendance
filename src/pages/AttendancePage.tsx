@@ -49,15 +49,18 @@ export default function AttendancePage() {
     try {
       // Get GPS first
       const gpsData = await getCurrentPosition();
-      if (!gpsData.inRange && !gpsData.error) {
+      
+      // Must be within range to check in
+      if (!gpsData.inRange) {
         toast({
           variant: 'destructive',
           title: 'อยู่นอกพื้นที่',
-          description: `คุณอยู่ห่างจากห้องดนตรี ${gpsData.distance} เมตร (อนุญาตสูงสุด 200 เมตร)`,
+          description: gpsData.error || `คุณอยู่ห่างจากห้องดนตรี ${gpsData.distance} เมตร (อนุญาตสูงสุด 200 เมตร)`,
         });
         setCheckingIn(null);
         return;
       }
+      
       await checkIn(sessionId, gpsData.lat ?? undefined, gpsData.lng ?? undefined, gpsData.inRange, gpsData.distance ?? undefined);
       toast({ variant: 'success', title: '✓ เช็คชื่อสำเร็จ!', description: 'บันทึกการเข้าร่วมแล้ว' });
     } catch (err) {
@@ -162,7 +165,7 @@ export default function AttendancePage() {
 
       {/* Sessions */}
       {sessions.map(session => {
-        const isOpen = isWithinAttendanceWindow(session.session_type);
+        const isOpen = isWithinAttendanceWindow(session.session_type, undefined, session.start_time, session.end_time);
         const myRecord = myRecords.find(r => r.session_id === session.id);
 
         return (

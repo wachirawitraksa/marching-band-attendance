@@ -20,8 +20,8 @@ import { ThaiDateInput } from '@/components/ui/thai-date-input';
 import { PracticeSession, Holiday, HolidayRange, SESSION_TYPE_LABELS } from '@/types';
 
 const FIXED_SCHEDULE = [
-  { day: 'จันทร์ – ศุกร์', time: '07:00 – 08:30 น.', label: 'ซ้อมเช้า' },
-  { day: 'พฤหัสบดี',       time: '15:20 – 16:10 น.', label: 'คาบชุมนุม' },
+  { day: 'จันทร์ – ศุกร์', time: '07:00 – 08:30 น.', label: 'ซ้อมเช้า (ห้ามเกิน 07:45 น.)' },
+  { day: 'พฤหัสบดี',       time: '15:20 – 16:10 น.', label: 'คาบชุมนุม  (ห้ามเกิน 15:35 น.)' },
 ];
 
 export default function SchedulePage() {

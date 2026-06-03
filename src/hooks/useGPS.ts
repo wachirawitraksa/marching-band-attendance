@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
-import { isWithinSchool, SCHOOL_LOCATION } from '@/lib/utils';
+import { useState, useCallback, useEffect } from 'react';
+import { haversineDistance } from '@/lib/utils';
+import { useGPSSettings } from './useGPSSettings';
 
 interface GPSState {
   lat: number | null;
@@ -11,6 +12,14 @@ interface GPSState {
   error: string | null;
 }
 
+// Default fallback location
+const DEFAULT_SCHOOL_LOCATION = {
+  lat: 18.7784475,
+  lng: 100.780098,
+  name: 'ห้องดนตรี',
+  allowedRadius: 200,
+};
+
 export function useGPS() {
   const [state, setState] = useState<GPSState>({
     lat: null,
@@ -21,6 +30,26 @@ export function useGPS() {
     loading: false,
     error: null,
   });
+
+  const { settings } = useGPSSettings();
+  
+  // Use settings from database, fallback to default
+  const schoolLocation = settings
+    ? {
+        lat: settings.latitude,
+        lng: settings.longitude,
+        name: settings.name,
+        allowedRadius: settings.allowed_radius,
+      }
+    : DEFAULT_SCHOOL_LOCATION;
+
+  const isWithinSchool = (lat: number, lng: number) => {
+    const distance = haversineDistance(lat, lng, schoolLocation.lat, schoolLocation.lng);
+    return {
+      inRange: distance <= schoolLocation.allowedRadius,
+      distance: Math.round(distance),
+    };
+  };
 
   const getCurrentPosition = useCallback((): Promise<GPSState> => {
     return new Promise((resolve) => {
@@ -82,11 +111,11 @@ export function useGPS() {
         }
       );
     });
-  }, [state]);
+  }, [state, schoolLocation]);
 
   return {
     ...state,
-    schoolLocation: SCHOOL_LOCATION,
+    schoolLocation,
     getCurrentPosition,
   };
 }

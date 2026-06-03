@@ -69,8 +69,26 @@ export function getDayOfWeekThai(date: Date | string): string {
   return days[d.getDay()];
 }
 
-export function isWithinAttendanceWindow(sessionType: SessionType, date?: Date): boolean {
+export function isWithinAttendanceWindow(sessionType: SessionType, date?: Date, startTime?: string, endTime?: string): boolean {
   const now = date || new Date();
+  
+  // If specific start/end times are provided (from database), use those
+  if (startTime && endTime) {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    const nowHours = now.getHours();
+    const nowMinutes = now.getMinutes();
+    const totalMinutes = nowHours * 60 + nowMinutes;
+    
+    const startTotalMinutes = startHour * 60 + startMin;
+    const endTotalMinutes = endHour * 60 + endMin;
+    
+    // Check if current time is within the session window
+    return totalMinutes >= startTotalMinutes && totalMinutes <= endTotalMinutes;
+  }
+
+  // Fallback to session type based times
   const hours = now.getHours();
   const minutes = now.getMinutes();
   const totalMinutes = hours * 60 + minutes;
@@ -80,7 +98,7 @@ export function isWithinAttendanceWindow(sessionType: SessionType, date?: Date):
     // Mon-Fri (1-5): 05:00-08:30
     if (dayOfWeek < 1 || dayOfWeek > 5) return false;
     const start = 5 * 60; // 05:00
-    const end = 8 * 60; // 08:00
+    const end = 8 * 60; // 08:30
     return totalMinutes >= start && totalMinutes <= end;
   }
 
@@ -155,20 +173,4 @@ export function haversineDistance(
       Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c; // Distance in meters
-}
-
-// School GPS coordinates - Fixed location
-export const SCHOOL_LOCATION = {
-  lat: 18.7784475,
-  lng: 100.780098,
-  name: 'ห้องดนตรี',
-  allowedRadius: 200, // meters
-};
-
-export function isWithinSchool(lat: number, lng: number): { inRange: boolean; distance: number } {
-  const distance = haversineDistance(lat, lng, SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng);
-  return {
-    inRange: distance <= SCHOOL_LOCATION.allowedRadius,
-    distance: Math.round(distance),
-  };
 }

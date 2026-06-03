@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { isWithinAttendanceWindow } from '@/lib/utils';
+import { useGPS } from '@/hooks/useGPS';
 import { SessionType } from '@/types';
 
-type Status = 'loading' | 'success' | 'error' | 'already' | 'closed' | 'not_auth';
+type Status = 'loading' | 'success' | 'error' | 'already' | 'closed' | 'not_auth' | 'out_of_location';
 
 export default function QRCheckInPage() {
   const { token } = useParams<{ token: string }>();
   const { user, profile } = useAuthStore();
+  const { getCurrentPosition } = useGPS();
   const navigate = useNavigate();
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState('');
@@ -38,11 +40,19 @@ export default function QRCheckInPage() {
       if (session.date !== today) { setStatus('closed'); setMessage('QR Code นี้ไม่ใช่ของวันนี้'); return; }
 
       // Check time window
-      if (!isWithinAttendanceWindow(session.session_type as SessionType)) {
+      if (!isWithinAttendanceWindow(session.session_type as SessionType, undefined, session.start_time, session.end_time)) {
         setStatus('closed'); setMessage('ยังไม่ถึงเวลาเช็คชื่อ หรือหมดเวลาแล้ว'); return;
       }
 
       if (!profile) { setStatus('error'); setMessage('ไม่พบข้อมูลผู้ใช้'); return; }
+
+      // Check GPS location
+      const gpsData = await getCurrentPosition();
+      if (!gpsData.inRange) {
+        setStatus('out_of_location');
+        setMessage(gpsData.error || `คุณอยู่ห่างจากห้องดนตรี ${gpsData.distance} เมตร (อนุญาตสูงสุด 200 เมตร)`);
+        return;
+      }
 
       // Check if already checked in
       const { data: existing } = await supabase
@@ -63,6 +73,10 @@ export default function QRCheckInPage() {
           status: 'present',
           check_in_time: new Date().toISOString(),
           qr_code_used: true,
+          gps_verified: gpsData.inRange,
+          gps_lat: gpsData.lat ?? undefined,
+          gps_lng: gpsData.lng ?? undefined,
+          gps_distance: gpsData.distance ?? undefined,
         }, { onConflict: 'session_id,student_id' });
 
       if (insertErr) throw insertErr;
@@ -80,6 +94,7 @@ export default function QRCheckInPage() {
     already: <CheckCircle2 size={48} className="text-blue-400" />,
     error: <XCircle size={48} className="text-red-400" />,
     closed: <XCircle size={48} className="text-yellow-400" />,
+    out_of_location: <XCircle size={48} className="text-red-400" />,
     not_auth: <XCircle size={48} className="text-red-400" />,
   };
 
@@ -89,6 +104,7 @@ export default function QRCheckInPage() {
     already: 'เช็คชื่อแล้ว',
     error: 'เกิดข้อผิดพลาด',
     closed: 'ไม่สามารถเช็คชื่อได้',
+    out_of_location: 'อยู่นอกพื้นที่',
     not_auth: 'กรุณาเข้าสู่ระบบ',
   };
 
@@ -115,12 +131,12 @@ export default function QRCheckInPage() {
               ไปหน้าเข้าสู่ระบบ
             </Button>
           )}
-          {(status === 'success' || status === 'already' || status === 'error' || status === 'closed') && (
+          {(status === 'success' || status === 'already' || status === 'error' || status === 'closed' || status === 'out_of_location') && (
             <Button
               className="w-full bg-brand-500 hover:bg-brand-400 text-white font-semibold"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/attendance')}
             >
-              กลับหน้าหลัก
+              กลับหน้าเช็คชื่อ
             </Button>
           )}
         </div>

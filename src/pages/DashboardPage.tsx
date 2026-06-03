@@ -206,7 +206,7 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground text-center py-4">ไม่มีรอบซ้อมวันนี้</p>
             ) : (
               todaySessions.map(session => {
-                const isOpen = isWithinAttendanceWindow(session.session_type);
+                const isOpen = isWithinAttendanceWindow(session.session_type, undefined, session.start_time, session.end_time);
                 const myRecord = myRecords.find(r => r.session_id === session.id);
                 return (
                   <div key={session.id} className={`flex items-center justify-between p-3 rounded-lg border ${isOpen ? 'border-brand-500/30 bg-brand-500/5' : 'border-border bg-muted/30'}`}>
