@@ -168,7 +168,7 @@ export default function AttendancePage() {
                   lat ? (inRange ? `อยู่ในพื้นที่ (${distance} ม.)` : `นอกพื้นที่ (${distance} ม. จาก ${schoolLocation?.name || 'พื้นที่กำหนด'}`) :
                     'กดเพื่อตรวจสอบตำแหน่ง GPS'}
               </span>
-              <Button size="sm" variant="outline" className="h-7 text-xs ml-2" onClick={getCurrentPosition} disabled={gpsLoading}>
+              <Button size="sm" variant="outline" className="h-7 text-xs ml-2" onClick={() => getCurrentPosition(true)} disabled={gpsLoading}>
                 {gpsLoading ? <Loader2 size={12} className="animate-spin" /> : 'ตรวจสอบ'}
               </Button>
             </AlertDescription>
