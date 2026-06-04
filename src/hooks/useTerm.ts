@@ -17,7 +17,7 @@ export function useTerm() {
         .order('academic_year', { ascending: false })
         .order('semester', { ascending: false });
       
-      const timeoutPromise = new Promise((_, reject) =>
+      const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Academic terms fetch timeout')), 5000)
       );
       
