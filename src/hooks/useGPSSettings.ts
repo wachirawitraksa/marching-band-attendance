@@ -19,13 +19,21 @@ export function useGPSSettings() {
     const loadSettings = async () => {
       try {
         setLoading(true);
-        const { data, error: err } = await supabase
+        
+        // Add 5-second timeout to prevent hanging
+        const queryPromise = supabase
           .from('gps_settings')
           .select('*')
           .eq('is_active', true)
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
+        
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('GPS settings fetch timeout')), 5000)
+        );
+        
+        const { data, error: err } = await Promise.race([queryPromise, timeoutPromise]);
 
         if (err) {
           console.warn('Failed to load GPS settings:', err);
