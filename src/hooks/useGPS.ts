@@ -22,6 +22,10 @@ const defaultState: GPSState = {
   error: null,
 };
 
+const GPS_CACHE_DURATION_MS = 5 * 60 * 1000; // เก็บผล GPS ไว้ 5 นาที เพื่อไม่ให้ต้องสแกนใหม่ทุกครั้ง
+let cachedGPSState: GPSState = defaultState;
+let cachedGPSCheckedAt: number | null = null;
+
 const DEFAULT_SCHOOL_LOCATION = {
   lat: 18.7784475,
   lng: 100.780098,
@@ -31,6 +35,7 @@ const DEFAULT_SCHOOL_LOCATION = {
 
 export function useGPS() {
   const [state, setState] = useState<GPSState>(defaultState);
+  const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(null);
   const { settings } = useGPSSettings();
 
   const schoolLocation = settings
@@ -54,8 +59,17 @@ export function useGPS() {
     };
   };
 
-  const getCurrentPosition = useCallback((): Promise<GPSState> => {
+  const getCurrentPosition = useCallback((forceRefresh = false): Promise<GPSState> => {
     return new Promise(async (resolve) => {
+      const now = Date.now();
+      const canUseCache = !forceRefresh && cachedGPSState.lat !== null && cachedGPSState.lng !== null && cachedGPSCheckedAt !== null && now - cachedGPSCheckedAt <= GPS_CACHE_DURATION_MS;
+      if (canUseCache) {
+        setState(cachedGPSState);
+        setLastCheckedAt(cachedGPSCheckedAt);
+        resolve(cachedGPSState);
+        return;
+      }
+
       if (!navigator.geolocation) {
         const result: GPSState = { ...defaultState, error: 'อุปกรณ์นี้ไม่รองรับ GPS' };
         setState(result);
@@ -97,6 +111,9 @@ export function useGPS() {
             error: null,
           };
           setState(result);
+          setLastCheckedAt(Date.now());
+          cachedGPSState = result;
+          cachedGPSCheckedAt = Date.now();
           resolve(result);
         },
         (err) => {
@@ -108,10 +125,10 @@ export function useGPS() {
           setState(result);
           resolve(result);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 60000 }
       );
     });
-  }, [schoolLocation]);
+  }, [schoolLocation, state, lastCheckedAt]);
 
   return {
     ...state,
