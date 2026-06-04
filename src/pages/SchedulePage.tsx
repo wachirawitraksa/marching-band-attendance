@@ -201,13 +201,12 @@ export default function SchedulePage() {
       if (error) throw error;
 
       // ลบ session ปกติ (ไม่ใช่ override) ในช่วงนี้ทั้งหมด
-      const { count } = await supabase
+      await supabase
         .from('practice_sessions')
         .delete()
         .gte('date', rangeForm.start_date)
         .lte('date', rangeForm.end_date)
-        .eq('is_override', false)
-        .select('*', { count: 'exact', head: true });
+        .eq('is_override', false);
 
       toast({
         variant: 'success',

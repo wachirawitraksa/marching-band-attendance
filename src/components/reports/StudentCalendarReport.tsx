@@ -41,7 +41,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
   const [dayRecords, setDayRecords] = useState<Record<string, DayRecord>>({});
   const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
