@@ -65,6 +65,29 @@ export default function App() {
   useEffect(() => {
     setLoading(true);
 
+    // โหลดโปรไฟล์ — เรียกได้นอก callback ของ onAuthStateChange เท่านั้น
+    const loadProfile = async (userId: string) => {
+      try {
+        // Timeout the profile fetch after 8 seconds
+        const profilePromise = supabase
+          .from('profiles')
+          .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
+          .eq('id', userId)
+          .single();
+
+        const profileTimeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
+        );
+
+        const { data } = await Promise.race([profilePromise, profileTimeoutPromise]);
+        setProfile(data ?? null);
+      } catch (profileError) {
+        console.error('Profile fetch error:', profileError);
+        setProfile(null);
+        // Continue anyway - profile is optional for showing the app
+      }
+    };
+
     const initializeAuth = async () => {
       try {
         // Set a 10-second timeout for the session check
@@ -72,30 +95,12 @@ export default function App() {
         const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Session check timeout')), 10000)
         );
-        
+
         const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
 
         if (session?.user) {
           setUser(session.user);
-          try {
-            // Timeout the profile fetch after 8 seconds
-            const profilePromise = supabase
-              .from('profiles')
-              .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
-              .eq('id', session.user.id)
-              .single();
-            
-            const profileTimeoutPromise = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
-            );
-            
-            const { data } = await Promise.race([profilePromise, profileTimeoutPromise]);
-            if (data) setProfile(data);
-          } catch (profileError) {
-            console.error('Profile fetch error:', profileError);
-            setProfile(null);
-            // Continue anyway - profile is optional for showing the app
-          }
+          await loadProfile(session.user.id);
         } else {
           setUser(null);
           setProfile(null);
@@ -111,17 +116,17 @@ export default function App() {
 
     initializeAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // สำคัญ: callback นี้ต้องเป็น synchronous และห้าม await คำสั่ง supabase ใด ๆ
+    // ภายใน เพราะ supabase-js ถือ navigator lock ตลอดช่วงที่ callback ทำงาน หาก
+    // await supabase.from()/auth ข้างในจะเกิด deadlock (สปินค้าง / เด้งกลับหน้า
+    // login). ต้องเลื่อนงานที่เรียก DB ออกไปด้วย setTimeout(0) ให้ lock ถูกปล่อยก่อน
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
+        const userId = session.user.id;
         setUser(session.user);
-        const { data } = await supabase
-          .from('profiles')
-          .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
-          .eq('id', session.user.id)
-          .single();
-        if (data) setProfile(data);
         setLoading(false);
         navigate('/dashboard', { replace: true });
+        setTimeout(() => { loadProfile(userId); }, 0);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setProfile(null);
