@@ -26,7 +26,7 @@ const DEFAULT_SCHOOL_LOCATION = {
   lat: 18.7784475,
   lng: 100.780098,
   name: 'ห้องดนตรี',
-  allowedRadius: 100000,
+  allowedRadius: 200,
 };
 
 export function useGPS() {
