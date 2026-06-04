@@ -19,8 +19,8 @@ import AdminPage from '@/pages/AdminPage';
 import SchedulePage from '@/pages/SchedulePage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
-// Idle timeout = 3 ชั่วโมง 30 นาที
-const IDLE_TIMEOUT_MS = (3 * 60 + 30) * 60 * 1000;
+// Idle timeout = 3.5 ชั่วโมง (3 ชั่วโมง 30 นาที)
+const IDLE_TIMEOUT_MS = 3.5 * 60 * 60 * 1000;
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore();
