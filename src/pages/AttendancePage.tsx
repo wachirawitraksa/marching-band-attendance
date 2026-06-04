@@ -26,7 +26,7 @@ export default function AttendancePage() {
   const { profile } = useAuthStore();
   const today = new Date().toISOString().split('T')[0];
   const { sessions, myRecords, loading, checkIn, submitReason, refetch } = useAttendance(today);
-  const { lat, lng, distance, inRange, loading: gpsLoading, error: gpsError, getCurrentPosition } = useGPS();
+  const { lat, lng, distance, inRange, loading: gpsLoading, error: gpsError, schoolLocation, getCurrentPosition } = useGPS();
 
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [reasonDialog, setReasonDialog] = useState<{ open: boolean; sessionId: string; sessionName: string }>({ open: false, sessionId: '', sessionName: '' });
@@ -45,26 +45,47 @@ export default function AttendancePage() {
 
   const handleCheckIn = async (sessionId: string) => {
     if (!profile) return;
+    // ป้องกัน double-click
+    if (checkingIn) return;
     setCheckingIn(sessionId);
     try {
-      // Get GPS first
       const gpsData = await getCurrentPosition();
-      
-      // Must be within range to check in
+
+      // GPS permission denied → หยุดทันที แสดง toast เดียว
+      if (gpsData.error) {
+        toast({
+          variant: 'destructive',
+          title: 'ตรวจสอบตำแหน่งไม่ได้',
+          description: gpsData.error,
+        });
+        return;
+      }
+
+      // อยู่นอกพื้นที่ → หยุดทันที
       if (!gpsData.inRange) {
+        const locationLabel = schoolLocation?.name || 'พื้นที่กำหนด';
         toast({
           variant: 'destructive',
           title: 'อยู่นอกพื้นที่',
-          description: gpsData.error || `คุณอยู่ห่างจากห้องดนตรี ${gpsData.distance} เมตร (อนุญาตสูงสุด 200 เมตร)`,
+          description: `คุณอยู่ห่างจาก ${locationLabel} ${gpsData.distance} เมตร (อนุญาตสูงสุด ${schoolLocation?.allowedRadius ?? 200} เมตร)`,
         });
-        setCheckingIn(null);
         return;
       }
-      
-      await checkIn(sessionId, gpsData.lat ?? undefined, gpsData.lng ?? undefined, gpsData.inRange, gpsData.distance ?? undefined);
+
+      await checkIn(
+        sessionId,
+        gpsData.lat ?? undefined,
+        gpsData.lng ?? undefined,
+        gpsData.inRange,
+        gpsData.distance ?? undefined
+      );
       toast({ variant: 'success', title: '✓ เช็คชื่อสำเร็จ!', description: 'บันทึกการเข้าร่วมแล้ว' });
     } catch (err) {
-      toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด', description: err instanceof Error ? err.message : 'ลองใหม่อีกครั้ง' });
+      toast({
+        variant: 'destructive',
+        title: 'เกิดข้อผิดพลาด',
+        description: err instanceof Error ? err.message : 'ลองใหม่อีกครั้ง',
+      });
     } finally {
       setCheckingIn(null);
     }
@@ -137,20 +158,27 @@ export default function AttendancePage() {
 
       {/* GPS status (student) */}
       {!isTeacher && (
-        <Alert variant={inRange ? 'success' : gpsError ? 'destructive' : 'info'}>
-          <Navigation size={16} />
-          <AlertDescription className="flex items-center justify-between">
-            <span>
-              {gpsLoading ? 'กำลังตรวจสอบตำแหน่ง...' :
-                gpsError ? gpsError :
-                lat ? (inRange ? `อยู่ในพื้นที่ (${distance} ม.)` : `นอกพื้นที่ (${distance} ม. จากห้องดนตรี)`) :
-                  'กดเพื่อตรวจสอบตำแหน่ง GPS'}
-            </span>
-            <Button size="sm" variant="outline" className="h-7 text-xs ml-2" onClick={getCurrentPosition} disabled={gpsLoading}>
-              {gpsLoading ? <Loader2 size={12} className="animate-spin" /> : 'ตรวจสอบ'}
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <>
+          <Alert variant={inRange ? 'success' : gpsError ? 'destructive' : 'info'}>
+            <Navigation size={16} />
+            <AlertDescription className="flex items-center justify-between">
+              <span>
+                {gpsLoading ? 'กำลังตรวจสอบตำแหน่ง...' :
+                  gpsError ? gpsError :
+                  lat ? (inRange ? `อยู่ในพื้นที่ (${distance} ม.)` : `นอกพื้นที่ (${distance} ม. จาก ${schoolLocation?.name || 'พื้นที่กำหนด'}`) :
+                    'กดเพื่อตรวจสอบตำแหน่ง GPS'}
+              </span>
+              <Button size="sm" variant="outline" className="h-7 text-xs ml-2" onClick={getCurrentPosition} disabled={gpsLoading}>
+                {gpsLoading ? <Loader2 size={12} className="animate-spin" /> : 'ตรวจสอบ'}
+              </Button>
+            </AlertDescription>
+          </Alert>
+          {gpsError && (
+            <p className="text-xs text-muted-foreground">
+              หากยังไม่ได้รับอนุญาต ให้ตรวจสอบการตั้งค่าเบราว์เซอร์และอนุญาตตำแหน่งสำหรับเว็บไซต์นี้ บน Netlify จะต้องอยู่บน HTTPS เท่านั้น
+            </p>
+          )}
+        </>
       )}
 
       {/* No sessions today */}
@@ -165,7 +193,7 @@ export default function AttendancePage() {
 
       {/* Sessions */}
       {sessions.map(session => {
-        const isOpen = isWithinAttendanceWindow(session.session_type, undefined, session.start_time, session.end_time);
+        const isOpen = isWithinAttendanceWindow(session.session_type);
         const myRecord = myRecords.find(r => r.session_id === session.id);
 
         return (

@@ -34,11 +34,31 @@ npm install
 npm run dev
 ```
 
-### 6. Deploy (Vercel ฟรี)
+### 6. Deploy (Netlify)
 ```bash
-npm install -g vercel
-vercel --prod
-# ตั้งค่า Environment Variables ใน Vercel Dashboard
+npm install -g netlify-cli
+netlify login
+netlify init
+# เลือก site ใหม่หรือเลือก site ปัจจุบัน
+netlify deploy --prod
+```
+
+หรือใช้ Netlify Dashboard:
+1. เชื่อม Git repository
+2. ใส่ Build command: `npm run build`
+3. ใส่ Publish directory: `dist`
+4. ตั้ง Environment variables ใน Netlify dashboard
+
+เพิ่มไฟล์ `netlify.toml` สำหรับ Vite app:
+```toml
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 ```
 
 ---

@@ -26,7 +26,7 @@ export function GPSSettingsManager() {
     name: 'ห้องดนตรี',
     latitude: 18.7784475,
     longitude: 100.780098,
-    allowed_radius: 200,
+    allowed_radius: 100000,
   });
 
   const isTeacher = profile?.role === 'admin' || profile?.role === 'teacher';
