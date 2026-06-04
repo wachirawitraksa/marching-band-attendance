@@ -29,7 +29,7 @@ export function useGPSSettings() {
           .limit(1)
           .single();
         
-        const timeoutPromise = new Promise((_, reject) =>
+        const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('GPS settings fetch timeout')), 5000)
         );
         

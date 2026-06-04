@@ -69,7 +69,7 @@ export default function App() {
       try {
         // Set a 10-second timeout for the session check
         const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise((_, reject) =>
+        const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Session check timeout')), 10000)
         );
         
@@ -85,7 +85,7 @@ export default function App() {
               .eq('id', session.user.id)
               .single();
             
-            const profileTimeoutPromise = new Promise((_, reject) =>
+            const profileTimeoutPromise = new Promise<never>((_, reject) =>
               setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
             );
             
