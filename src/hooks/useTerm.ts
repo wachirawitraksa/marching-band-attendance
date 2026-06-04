@@ -9,14 +9,28 @@ export function useTerm() {
 
   const fetchTerms = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('academic_terms')
-      .select('*')
-      .order('academic_year', { ascending: false })
-      .order('semester', { ascending: false });
-    setAllTerms(data || []);
-    setCurrentTerm(data?.find(t => t.is_current) || null);
-    setLoading(false);
+    try {
+      // Add timeout for terms fetch
+      const queryPromise = supabase
+        .from('academic_terms')
+        .select('*')
+        .order('academic_year', { ascending: false })
+        .order('semester', { ascending: false });
+      
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Academic terms fetch timeout')), 5000)
+      );
+      
+      const { data } = await Promise.race([queryPromise, timeoutPromise]);
+      setAllTerms(data || []);
+      setCurrentTerm(data?.find(t => t.is_current) || null);
+    } catch (error) {
+      console.error('Error fetching terms:', error);
+      setAllTerms([]);
+      setCurrentTerm(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchTerms(); }, [fetchTerms]);

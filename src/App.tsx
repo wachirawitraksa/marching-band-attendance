@@ -65,29 +65,51 @@ export default function App() {
   useEffect(() => {
     setLoading(true);
 
-    supabase.auth.getSession()
-      .then(async ({ data: { session } }) => {
+    const initializeAuth = async () => {
+      try {
+        // Set a 10-second timeout for the session check
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Session check timeout')), 10000)
+        );
+        
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+
         if (session?.user) {
           setUser(session.user);
-          const { data } = await supabase
-            .from('profiles')
-            .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
-            .eq('id', session.user.id)
-            .single();
-          if (data) setProfile(data);
+          try {
+            // Timeout the profile fetch after 8 seconds
+            const profilePromise = supabase
+              .from('profiles')
+              .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
+              .eq('id', session.user.id)
+              .single();
+            
+            const profileTimeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
+            );
+            
+            const { data } = await Promise.race([profilePromise, profileTimeoutPromise]);
+            if (data) setProfile(data);
+          } catch (profileError) {
+            console.error('Profile fetch error:', profileError);
+            setProfile(null);
+            // Continue anyway - profile is optional for showing the app
+          }
         } else {
           setUser(null);
           setProfile(null);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Supabase session error:', error);
         setUser(null);
         setProfile(null);
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
