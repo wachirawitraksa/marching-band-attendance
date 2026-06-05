@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
 import { Profile, AttendanceRecord, ATTENDANCE_STATUS_LABELS, SESSION_TYPE_LABELS } from '@/types';
-import { getAvatarFallback, calculateAttendanceRate, formatThaiDate, formatTime } from '@/lib/utils';
+import { getAvatarFallback, calculateAttendanceRate, formatTime, getAcademicYearOf, getCurrentAcademicYear } from '@/lib/utils';
 
 interface Props {
   student: Profile;
@@ -42,6 +43,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
   const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [filterYear, setFilterYear] = useState(String(getCurrentAcademicYear()));
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -112,13 +114,33 @@ export function StudentCalendarReport({ student, onClose }: Props) {
   const todayNum = new Date().getDate();
   const isCurrentMonth = year === new Date().getFullYear() && month === new Date().getMonth();
 
-  // Overall stats
-  const totalPresent = allRecords.filter(r => r.status === 'present').length;
-  const totalLate = allRecords.filter(r => r.status === 'late').length;
-  const totalAbsent = allRecords.filter(r => r.status === 'absent').length;
-  const totalExcused = allRecords.filter(r => r.status === 'excused').length;
-  const totalAll = allRecords.length;
+  // Overall stats (ตามปีการศึกษาที่เลือก)
+  const scopedRecords = allRecords.filter(r =>
+    filterYear === 'all' || (!!r.session && String(getAcademicYearOf(r.session.date)) === filterYear)
+  );
+  const totalPresent = scopedRecords.filter(r => r.status === 'present').length;
+  const totalLate = scopedRecords.filter(r => r.status === 'late').length;
+  const totalAbsent = scopedRecords.filter(r => r.status === 'absent').length;
+  const totalExcused = scopedRecords.filter(r => r.status === 'excused').length;
+  const totalAll = scopedRecords.length;
   const rate = calculateAttendanceRate(totalPresent + totalLate, totalAll);
+
+  // ปีการศึกษาที่มีข้อมูล (รวมปีปัจจุบันเสมอ) เรียงจากใหม่ไปเก่า
+  const availableYears = Array.from(new Set([
+    getCurrentAcademicYear(),
+    ...allRecords.filter(r => r.session).map(r => getAcademicYearOf(r.session!.date)),
+  ])).sort((a, b) => b - a);
+
+  // เปลี่ยนปีการศึกษา → กระโดดปฏิทินไปยังปีนั้น (ไม่เกินเดือนปัจจุบัน)
+  const handleYearChange = (value: string) => {
+    setFilterYear(value);
+    setSelectedDay(null);
+    if (value === 'all') return;
+    const startCE = parseInt(value, 10) - 543; // ปีการศึกษาเริ่มเดือนพฤษภาคม (เดือน index 4)
+    const target = new Date(startCE, 4, 1);
+    const now = new Date();
+    setViewDate(target > now ? now : target);
+  };
 
   const thaiMonths = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
     'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
@@ -154,6 +176,15 @@ export function StudentCalendarReport({ student, onClose }: Props) {
         </div>
 
         <div className="p-4 space-y-4">
+          {/* Academic year selector */}
+          <Select value={filterYear} onValueChange={handleYearChange}>
+            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">ทุกปีการศึกษา</SelectItem>
+              {availableYears.map(y => <SelectItem key={y} value={String(y)}>ปีการศึกษา {y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
           {/* Stats row */}
           <div className="grid grid-cols-4 gap-2">
             {[
@@ -172,7 +203,9 @@ export function StudentCalendarReport({ student, onClose }: Props) {
           {/* Attendance rate bar */}
           <div>
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-muted-foreground">อัตราเข้าร่วม (รวมทั้งหมด)</span>
+              <span className="text-muted-foreground">
+                อัตราเข้าร่วม ({filterYear === 'all' ? 'รวมทั้งหมด' : `ปีการศึกษา ${filterYear}`})
+              </span>
               <span className={`font-bold ${rate >= 80 ? 'text-green-400' : rate >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>{rate}%</span>
             </div>
             <Progress value={rate} className="h-2" />
