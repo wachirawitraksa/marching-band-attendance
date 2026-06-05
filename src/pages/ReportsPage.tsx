@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
-import { formatThaiDate, getAvatarFallback, calculateAttendanceRate } from '@/lib/utils';
+import { formatThaiDate, getAvatarFallback, calculateAttendanceRate, getAcademicYearOf, getCurrentAcademicYear } from '@/lib/utils';
 import { Profile, AttendanceRecord, Section, ATTENDANCE_STATUS_LABELS } from '@/types';
 import { StudentCalendarReport } from '@/components/reports/StudentCalendarReport';
 import {
@@ -24,6 +24,7 @@ export default function ReportsPage() {
   const [students, setStudents] = useState<Profile[]>([]);
   const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
   const [filterSection, setFilterSection] = useState('all');
+  const [filterYear, setFilterYear] = useState(String(getCurrentAcademicYear()));
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth().toString());
   const [tab, setTab] = useState('overview');
   const [calendarStudent, setCalendarStudent] = useState<Profile | null>(null);
@@ -47,11 +48,19 @@ export default function ReportsPage() {
 
   const filtered = students.filter(s => filterSection === 'all' || s.section_id === filterSection);
 
+  // ปีการศึกษาที่มีข้อมูล (รวมปีปัจจุบันเสมอ) เรียงจากใหม่ไปเก่า
+  const availableYears = Array.from(new Set([
+    getCurrentAcademicYear(),
+    ...allRecords.filter(r => r.session).map(r => getAcademicYearOf(r.session!.date)),
+  ])).sort((a, b) => b - a);
+
+  const matchesYear = (r: AttendanceRecord) =>
+    filterYear === 'all' || (!!r.session && String(getAcademicYearOf(r.session.date)) === filterYear);
+  const matchesMonth = (r: AttendanceRecord) =>
+    filterMonth === 'all' || (!!r.session && new Date(r.session.date).getMonth().toString() === filterMonth);
+
   const getStudentStats = (studentId: string) => {
-    const records = allRecords.filter(r => {
-      const m = r.session ? new Date(r.session.date).getMonth().toString() : '-1';
-      return r.student_id === studentId && (filterMonth === 'all' || m === filterMonth);
-    });
+    const records = allRecords.filter(r => r.student_id === studentId && matchesYear(r) && matchesMonth(r));
     const present = records.filter(r => r.status === 'present').length;
     const late = records.filter(r => r.status === 'late').length;
     const absent = records.filter(r => r.status === 'absent').length;
@@ -59,7 +68,7 @@ export default function ReportsPage() {
     return { present, late, absent, excused, total: records.length, rate: calculateAttendanceRate(present + late, records.length) };
   };
 
-  const totalRecords = allRecords.filter(r => filterMonth === 'all' || (r.session && new Date(r.session.date).getMonth().toString() === filterMonth));
+  const totalRecords = allRecords.filter(r => matchesYear(r) && matchesMonth(r));
   const overallPresent = totalRecords.filter(r => r.status === 'present' || r.status === 'late').length;
   const overallRate = calculateAttendanceRate(overallPresent, totalRecords.length);
 
@@ -102,6 +111,13 @@ export default function ReportsPage() {
           <p className="text-sm text-muted-foreground">ภาพรวมการเข้าร่วมซ้อม</p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Select value={filterYear} onValueChange={setFilterYear}>
+            <SelectTrigger className="w-32 h-9 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">ทุกปีการศึกษา</SelectItem>
+              {availableYears.map(y => <SelectItem key={y} value={String(y)}>ปีการศึกษา {y}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <Select value={filterMonth} onValueChange={setFilterMonth}>
             <SelectTrigger className="w-28 h-9 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>

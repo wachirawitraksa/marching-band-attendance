@@ -150,6 +150,17 @@ export function getCurrentAcademicYear(): number {
   return month >= 5 ? buddhistYear : buddhistYear - 1;
 }
 
+/**
+ * คืนปีการศึกษา (พ.ศ.) ของวันที่ที่กำหนด โดยใช้เกณฑ์เดียวกับ getCurrentAcademicYear
+ * คือปีการศึกษาเริ่มเดือนพฤษภาคม เช่น 2025-06-01 → 2568, 2026-03-01 → 2568
+ */
+export function getAcademicYearOf(date: string | Date): number {
+  const d = toDate(date);
+  const month = d.getUTCMonth() + 1;
+  const buddhistYear = d.getUTCFullYear() + 543;
+  return month >= 5 ? buddhistYear : buddhistYear - 1;
+}
+
 export function getAvatarFallback(name: string): string {
   const parts = name.split(' ');
   if (parts.length >= 2) {
