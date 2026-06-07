@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
 import { Profile, AttendanceRecord, ATTENDANCE_STATUS_LABELS, SESSION_TYPE_LABELS } from '@/types';
-import { getAvatarFallback, calculateAttendanceRate, formatTime, getAcademicYearOf, getCurrentAcademicYear } from '@/lib/utils';
+import { getAvatarFallback, calculateAttendanceRate, formatTime, getAcademicYearOf, getCurrentAcademicYear, getTodayBangkok } from '@/lib/utils';
 
 interface Props {
   student: Profile;
@@ -61,8 +61,11 @@ export function StudentCalendarReport({ student, onClose }: Props) {
 
   const loadMonthData = async () => {
     setLoading(true);
-    const start = new Date(year, month, 1).toISOString().split('T')[0];
-    const end = new Date(year, month + 1, 0).toISOString().split('T')[0];
+    // สร้างช่วงวันที่จากองค์ประกอบปี/เดือนโดยตรง (กัน timezone shift จาก toISOString)
+    const mm = String(month + 1).padStart(2, '0');
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const start = `${year}-${mm}-01`;
+    const end = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`;
 
     const [{ data: sessions }, { data: records }] = await Promise.all([
       supabase.from('practice_sessions').select('*').gte('date', start).lte('date', end).order('date').order('start_time'),
@@ -110,7 +113,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
     return !!dayRecords[dateStr];
   };
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayBangkok();
   const todayNum = new Date().getDate();
   const isCurrentMonth = year === new Date().getFullYear() && month === new Date().getMonth();
 

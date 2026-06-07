@@ -4,7 +4,7 @@ import { CheckCircle2, XCircle, Loader2, Music2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
-import { isWithinAttendanceWindow } from '@/lib/utils';
+import { isWithinAttendanceWindow, getTodayBangkok, getCheckInStatus } from '@/lib/utils';
 import { useGPS } from '@/hooks/useGPS';
 import { SessionType } from '@/types';
 
@@ -36,7 +36,7 @@ export default function QRCheckInPage() {
       if (error || !session) { setStatus('error'); setMessage('QR Code ไม่ถูกต้องหรือหมดอายุ'); return; }
 
       // Check if session is today
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayBangkok();
       if (session.date !== today) { setStatus('closed'); setMessage('QR Code นี้ไม่ใช่ของวันนี้'); return; }
 
       // Check time window
@@ -64,13 +64,13 @@ export default function QRCheckInPage() {
 
       if (existing?.status === 'present') { setStatus('already'); setMessage('คุณเช็คชื่อไปแล้ว'); return; }
 
-      // Check in
+      // Check in (สถานะ มาปกติ/สาย ตามเวลาไทย)
       const { error: insertErr } = await supabase
         .from('attendance_records')
         .upsert({
           session_id: session.id,
           student_id: profile.id,
-          status: 'present',
+          status: getCheckInStatus(session.session_type as SessionType),
           check_in_time: new Date().toISOString(),
           qr_code_used: true,
           gps_verified: gpsData.inRange,

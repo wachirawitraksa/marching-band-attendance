@@ -16,7 +16,7 @@ import { useAllAttendance } from '@/hooks/useAttendance';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import {
-  formatThaiDate, formatTime, getDayOfWeekThai, isWithinAttendanceWindow, getAvatarFallback
+  formatThaiDate, formatTime, getDayOfWeekThai, isWithinAttendanceWindow, getAvatarFallback, getTodayBangkok
 } from '@/lib/utils';
 import { AttendanceRecord, Profile, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,7 +24,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 export default function AttendancePage() {
   const { profile } = useAuthStore();
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayBangkok();
   const { sessions, myRecords, loading, checkIn, submitReason, refetch } = useAttendance(today);
   const { lat, lng, distance, inRange, loading: gpsLoading, error: gpsError, schoolLocation, getCurrentPosition } = useGPS();
 

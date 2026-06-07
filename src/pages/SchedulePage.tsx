@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
-import { formatThaiDate, formatTime, getDayOfWeekThai } from '@/lib/utils';
+import { formatThaiDate, formatTime, getDayOfWeekThai, getTodayBangkok, getBangkokDateWithOffset, getBangkokDayOfWeek } from '@/lib/utils';
 import { ThaiDateInput } from '@/components/ui/thai-date-input';
 import { PracticeSession, Holiday, HolidayRange, SESSION_TYPE_LABELS } from '@/types';
 
@@ -61,8 +61,7 @@ export default function SchedulePage() {
   const loadData = useCallback(async () => {
     setLoading(true);
 
-    const now     = new Date();
-    const today   = now.toISOString().split('T')[0];
+    const today   = getTodayBangkok();
 
     // โหลด holidays + ranges ก่อน
     const [{ data: holData }, { data: rangeData }] = await Promise.all([
@@ -79,11 +78,9 @@ export default function SchedulePage() {
         dateStr >= r.start_date && dateStr <= r.end_date
       );
 
-    // auto-generate พรุ่งนี้ (ถ้าไม่ใช่วันหยุดและไม่ใช่ช่วงปิดเทอม)
-    const tom    = new Date(now);
-    tom.setDate(tom.getDate() + 1);
-    const tomStr = tom.toISOString().split('T')[0];
-    const tomDow = tom.getDay();
+    // auto-generate พรุ่งนี้ (ถ้าไม่ใช่วันหยุดและไม่ใช่ช่วงปิดเทอม) — อิงเวลาไทย
+    const tomStr = getBangkokDateWithOffset(1);
+    const tomDow = getBangkokDayOfWeek(new Date(Date.now() + 24 * 60 * 60 * 1000));
 
     if (tomDow >= 1 && tomDow <= 5 && !holDates.has(tomStr) && !isInRange(tomStr)) {
       await supabase.from('practice_sessions').upsert(
@@ -230,8 +227,8 @@ export default function SchedulePage() {
     } catch { toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' }); }
   };
 
-  const todayStr    = new Date().toISOString().split('T')[0];
-  const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate()+1); return d.toISOString().split('T')[0]; })();
+  const todayStr    = getTodayBangkok();
+  const tomorrowStr = getBangkokDateWithOffset(1);
 
   // ตรวจสอบว่าตอนนี้อยู่ในช่วงปิดเทอมหรือไม่
   const currentRange = ranges.find(r => todayStr >= r.start_date && todayStr <= r.end_date);
