@@ -69,52 +69,93 @@ export function getDayOfWeekThai(date: Date | string): string {
   return days[d.getDay()];
 }
 
+/**
+ * เขตเวลาประเทศไทย — ใช้คำนวณวันที่/เวลาทุกครั้งที่เกี่ยวกับการเช็คชื่อ
+ * เพื่อกันบั๊ก timezone: toISOString() / getHours() อิงเวลา UTC หรือเวลาเครื่อง
+ * ซึ่งช่วงตี 5–เที่ยงคืนของไทย (UTC+7) จะถูกตีความเป็น "เมื่อวาน" ทำให้หารอบซ้อมไม่เจอ
+ */
+const BANGKOK_TZ = 'Asia/Bangkok';
+
+/** วันที่วันนี้ตามเวลาไทย รูปแบบ YYYY-MM-DD */
+export function getTodayBangkok(base: Date = new Date()): string {
+  // en-CA ให้รูปแบบ YYYY-MM-DD
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: BANGKOK_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(base);
+}
+
+/** วันที่ตามเวลาไทย บวก/ลบจำนวนวัน รูปแบบ YYYY-MM-DD (ไทยไม่มี DST จึงบวกเป็นมิลลิวินาทีได้) */
+export function getBangkokDateWithOffset(days: number, base: Date = new Date()): string {
+  return getTodayBangkok(new Date(base.getTime() + days * 24 * 60 * 60 * 1000));
+}
+
+/** จำนวนนาทีนับจากเที่ยงคืนตามเวลาไทย */
+export function getBangkokMinutesOfDay(base: Date = new Date()): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: BANGKOK_TZ, hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(base);
+  const h = Number(parts.find(p => p.type === 'hour')?.value ?? '0') % 24;
+  const m = Number(parts.find(p => p.type === 'minute')?.value ?? '0');
+  return h * 60 + m;
+}
+
+/** วันในสัปดาห์ตามเวลาไทย: 0=อาทิตย์ ... 6=เสาร์ */
+export function getBangkokDayOfWeek(base: Date = new Date()): number {
+  const wd = new Intl.DateTimeFormat('en-US', { timeZone: BANGKOK_TZ, weekday: 'short' }).format(base);
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(wd);
+}
+
+/**
+ * กติกาเวลาเช็คชื่อแต่ละประเภทรอบซ้อม (นาทีนับจากเที่ยงคืน เวลาไทย)
+ *  - open         : เริ่มเปิดให้เช็คชื่อ
+ *  - presentUntil : เช็คภายในเวลานี้ = มาปกติ (present)
+ *  - lateUntil    : เช็คภายในเวลานี้ = มาสาย (late) — เลยจากนี้ถือว่าขาด (absent) และปิดรับเช็ค
+ */
+export const ATTENDANCE_RULES: Record<SessionType, { open: number; presentUntil: number; lateUntil: number } | null> = {
+  // ซ้อมเช้า จ.–ศ.: เช็คได้ตั้งแต่ตี 5, ปกติถึง 07:45, สาย 07:46–08:09, ตั้งแต่ 08:10 ขาด
+  morning: { open: 5 * 60, presentUntil: 7 * 60 + 45, lateUntil: 8 * 60 + 9 },
+  // คาบชุมนุม: เช็คได้ตั้งแต่ 15:20, ปกติถึง 15:35, สาย 15:36–15:45, ตั้งแต่ 15:46 ขาด
+  club: { open: 15 * 60 + 20, presentUntil: 15 * 60 + 35, lateUntil: 15 * 60 + 45 },
+  // ซ้อมพิเศษ: ครูควบคุมเอง ไม่มีกติกาเวลาตายตัว
+  extra: null,
+};
+
+/** คำนวณสถานะการเช็คชื่อจากเวลาไทยปัจจุบัน: present / late / absent */
+export function getCheckInStatus(
+  sessionType: SessionType,
+  minutes: number = getBangkokMinutesOfDay(),
+): AttendanceStatus {
+  const rule = ATTENDANCE_RULES[sessionType];
+  if (!rule) return 'present'; // ซ้อมพิเศษ: เช็คเมื่อไรก็นับว่ามา
+  if (minutes <= rule.presentUntil) return 'present';
+  if (minutes <= rule.lateUntil) return 'late';
+  return 'absent';
+}
+
 export function isWithinAttendanceWindow(sessionType: SessionType, date?: Date, startTime?: string, endTime?: string): boolean {
-  const now = date || new Date();
-  
-  // If specific start/end times are provided (from database), use those
+  const base = date || new Date();
+  const totalMinutes = getBangkokMinutesOfDay(base);
+  const rule = ATTENDANCE_RULES[sessionType];
+
+  // รอบที่มีกติกาเวลา (ซ้อมเช้า / คาบชุมนุม) ใช้กติกากลางเสมอ เพื่อให้เช็คได้ตั้งแต่เวลาเปิดจริง
+  if (rule) {
+    // ซ้อมเช้าเปิดเฉพาะวันจันทร์–ศุกร์
+    if (sessionType === 'morning') {
+      const dayOfWeek = getBangkokDayOfWeek(base);
+      if (dayOfWeek < 1 || dayOfWeek > 5) return false;
+    }
+    // เปิดตั้งแต่เวลาเริ่ม จนถึงนาทีสุดท้ายที่ยังนับว่าสาย (หลังจากนั้นถือว่าขาด → ปิดรับเช็ค)
+    return totalMinutes >= rule.open && totalMinutes <= rule.lateUntil;
+  }
+
+  // ซ้อมพิเศษ: ใช้เวลาเริ่ม–สิ้นสุดจากฐานข้อมูลถ้ามี
   if (startTime && endTime) {
     const [startHour, startMin] = startTime.split(':').map(Number);
     const [endHour, endMin] = endTime.split(':').map(Number);
-    
-    const nowHours = now.getHours();
-    const nowMinutes = now.getMinutes();
-    const totalMinutes = nowHours * 60 + nowMinutes;
-    
-    const startTotalMinutes = startHour * 60 + startMin;
-    const endTotalMinutes = endHour * 60 + endMin;
-    
-    // Check if current time is within the session window
-    return totalMinutes >= startTotalMinutes && totalMinutes <= endTotalMinutes;
+    return totalMinutes >= startHour * 60 + startMin && totalMinutes <= endHour * 60 + endMin;
   }
 
-  // Fallback to session type based times
-  const hours = now.getHours();
-  const minutes = now.getMinutes();
-  const totalMinutes = hours * 60 + minutes;
-  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon ... 6=Sat
-
-  if (sessionType === 'morning') {
-    // Mon-Fri (1-5): 05:00-08:30
-    if (dayOfWeek < 1 || dayOfWeek > 5) return false;
-    const start = 5 * 60; // 05:00
-    const end = 8 * 60; // 08:30
-    return totalMinutes >= start && totalMinutes <= end;
-  }
-
-  if (sessionType === 'club') {
-    // Thursday (4): 15:20-16:10
-    if (dayOfWeek !== 4) return false;
-    const start = 15 * 60 + 20; // 15:20
-    const end = 15 * 60 + 45; // 15:45
-    return totalMinutes >= start && totalMinutes <= end;
-  }
-
-  if (sessionType === 'extra') {
-    return true; // Extra sessions are always open (teacher controlled)
-  }
-
-  return false;
+  return true; // ไม่มีเวลากำหนด = เปิดตลอด (ครูควบคุม)
 }
 
 export function getStatusColor(status: AttendanceStatus): string {
