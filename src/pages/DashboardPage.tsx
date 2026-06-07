@@ -12,7 +12,7 @@ import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/lib/supabase';
 import {
   formatThaiDate, formatTime, getDayOfWeekThai,
-  isWithinAttendanceWindow
+  isWithinAttendanceWindow, getTodayBangkok, getBangkokDateWithOffset
 } from '@/lib/utils';
 import { PracticeSession, AttendanceRecord, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import {
@@ -28,7 +28,7 @@ export default function DashboardPage() {
   const [totalStudents, setTotalStudents] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayBangkok();
   const isTeacher = profile?.role === 'admin' || profile?.role === 'teacher';
 
   useEffect(() => {
@@ -91,12 +91,8 @@ export default function DashboardPage() {
         }
       }
 
-      // Weekly chart data (last 7 days)
-      const days = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        return d.toISOString().split('T')[0];
-      });
+      // Weekly chart data (last 7 days) — อิงเวลาไทย
+      const days = Array.from({ length: 7 }, (_, i) => getBangkokDateWithOffset(-(6 - i)));
 
       const chartData = await Promise.all(days.map(async (d) => {
         const dayLabel = getDayOfWeekThai(d);

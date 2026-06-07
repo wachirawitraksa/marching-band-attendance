@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { PracticeSession, AttendanceRecord } from '@/types';
+import { PracticeSession, AttendanceRecord, SessionType } from '@/types';
 import { useAuthStore } from '@/store/authStore';
+import { getTodayBangkok, getCheckInStatus } from '@/lib/utils';
 
 export function useAttendance(date?: string) {
   const { profile } = useAuthStore();
@@ -10,7 +11,7 @@ export function useAttendance(date?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const targetDate = date || new Date().toISOString().split('T')[0];
+  const targetDate = date || getTodayBangkok();
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -71,29 +72,20 @@ export function useAttendance(date?: string) {
       throw new Error('คุณเช็คชื่อไปแล้วในรอบนี้');
     }
 
-    // ตรวจว่ามาสายหรือเปล่า
+    // ตรวจว่ามาปกติ / สาย / ขาด ตามเวลาไทย (กติกากลางใน utils)
     const { data: session } = await supabase
       .from('practice_sessions')
       .select('session_type, start_time')
       .eq('id', sessionId)
       .single();
 
-    const LATE_AFTER: Record<string, number> = {
-      morning: 7 * 60 + 45,       // หลัง 07:00 น. = สาย
-      club:    15 * 60 + 35, // หลัง 15:25 น. = สาย
-      extra:   0,            // ไม่มี threshold
-    };
-
-    const now = new Date();
-    const totalMin = now.getHours() * 60 + now.getMinutes();
-    const threshold = LATE_AFTER[session?.session_type || 'extra'];
-    const checkInStatus = (threshold > 0 && totalMin > threshold) ? 'late' : 'present';
+    const checkInStatus = getCheckInStatus((session?.session_type as SessionType) || 'extra');
 
 
     const record = {
       session_id: sessionId,
       student_id: profile.id,
-      status: checkInStatus, // ← เปลี่ยนบรรทัดนี้เป็น status: checkInStatus,
+      status: checkInStatus,
       check_in_time: new Date().toISOString(),
       gps_lat: gpsLat || null,
       gps_lng: gpsLng || null,
