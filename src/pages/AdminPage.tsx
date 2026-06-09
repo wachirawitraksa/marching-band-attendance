@@ -22,14 +22,23 @@ import { useAuthStore } from '@/store/authStore';
 import { SemesterManager } from '@/components/admin/SemesterManager';
 import { GPSSettingsManager } from '@/components/admin/GPSSettingsManager';
 
+const CLASSROOM_OPTIONS: string[] = [
+  '1/1','1/2','1/3','1/4','1/5','1/6','1/7','1/8','1/9','1.1','1.2','1.3',
+  '2/1','2/2','2/3','2/4','2/5','2/6','2/7','2/8','2/9','2.1','2.2','2.3',
+  '3/1','3/2','3/3','3/4','3/5','3/6','3/7','3/8','3/9','3.1','3.2','3.3',
+  '4/1','4/2','4/3','4/4','4/5','4/6','4/7','4/8','4/9','4.1','4.2','4.3',
+  '5/1','5/2','5/3','5/4','5/5','5/6','5/7','5/8','5/9','5.1','5.2','5.3',
+  '6/1','6/2','6/3','6/4','6/5','6/6','6/7','6/8','6/9','6.1','6.2','6.3',
+];
+
 interface CreateUserForm {
   email: string; password: string; full_name: string; nickname: string;
-  role: Role; student_id: string; year_level: string;
+  role: Role; student_id: string; year_level: string; classroom: string;
   section_id: string; instrument_id: string; is_in_club: boolean;
 }
 const defaultForm: CreateUserForm = {
   email: '', password: '', full_name: '', nickname: '',
-  role: 'student', student_id: '', year_level: '',
+  role: 'student', student_id: '', year_level: '', classroom: '',
   section_id: '', instrument_id: '', is_in_club: true,
 };
 
@@ -86,6 +95,7 @@ export default function AdminPage() {
       role: form.role,
       student_id: form.student_id.trim() || null,
       year_level: form.year_level ? Number(form.year_level) : null,
+      classroom: form.classroom.trim() || null,
       section_id: form.section_id || null,
       instrument_id: form.instrument_id || null,
       is_in_club: form.is_in_club,
@@ -384,6 +394,16 @@ export default function AdminPage() {
                     <Select value={form.year_level} onValueChange={v => setForm(f => ({ ...f, year_level: v }))}>
                       <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                       <SelectContent>{[1,2,3,4,5,6].map(y => <SelectItem key={y} value={String(y)}>ม.{y}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">ห้องเรียน</Label>
+                    <Select value={form.classroom || '__none__'} onValueChange={v => setForm(f => ({ ...f, classroom: v === '__none__' ? '' : v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— ไม่ระบุ —</SelectItem>
+                        {CLASSROOM_OPTIONS.map(c => <SelectItem key={c} value={c}>ม.{c}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1">

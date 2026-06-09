@@ -30,6 +30,7 @@ export interface Profile {
   year_level: number | null;
   section_id: string | null;
   instrument_id: string | null;
+  classroom: string | null;
   profile_picture_url: string | null;
   is_graduated: boolean;
   is_in_club: boolean;

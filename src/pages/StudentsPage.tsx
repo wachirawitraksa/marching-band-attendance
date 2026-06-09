@@ -20,6 +20,16 @@ import { getAvatarFallback } from '@/lib/utils';
 import { Profile, Section, Instrument } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 
+// ---- ห้องเรียนทั้งหมด ม.1–6 ----
+const CLASSROOM_OPTIONS: string[] = [
+  '1/1','1/2','1/3','1/4','1/5','1/6','1/7','1/8','1/9','1.1','1.2','1.3',
+  '2/1','2/2','2/3','2/4','2/5','2/6','2/7','2/8','2/9','2.1','2.2','2.3',
+  '3/1','3/2','3/3','3/4','3/5','3/6','3/7','3/8','3/9','3.1','3.2','3.3',
+  '4/1','4/2','4/3','4/4','4/5','4/6','4/7','4/8','4/9','4.1','4.2','4.3',
+  '5/1','5/2','5/3','5/4','5/5','5/6','5/7','5/8','5/9','5.1','5.2','5.3',
+  '6/1','6/2','6/3','6/4','6/5','6/6','6/7','6/8','6/9','6.1','6.2','6.3',
+];
+
 // ---- form type ----
 interface StudentForm {
   full_name: string;
@@ -28,6 +38,7 @@ interface StudentForm {
   password: string;
   student_id: string;
   year_level: string;
+  classroom: string;
   section_id: string;
   instrument_id: string;
   is_in_club: boolean;
@@ -36,7 +47,7 @@ interface StudentForm {
 
 const emptyForm: StudentForm = {
   full_name: '', nickname: '', email: '', password: '',
-  student_id: '', year_level: '', section_id: '',
+  student_id: '', year_level: '', classroom: '', section_id: '',
   instrument_id: '', is_in_club: true, is_active: true,
 };
 
@@ -55,6 +66,7 @@ export default function StudentsPage() {
   const [search, setSearch]           = useState('');
   const [filterSection, setFilterSection] = useState('all');
   const [filterYear, setFilterYear]   = useState('all');
+  const [filterClassroom, setFilterClassroom] = useState('all');
 
   // dialogs
   const [editDialog, setEditDialog]   = useState<Profile | null>(null);   // แก้ไข
@@ -103,8 +115,9 @@ export default function StudentsPage() {
       (s.student_id || '').includes(q) ||
       (s.email || '').toLowerCase().includes(q);
     const matchSection = filterSection === 'all' || s.section_id === filterSection;
-    const matchYear    = filterYear === 'all' || String(s.year_level) === filterYear;
-    return matchSearch && matchSection && matchYear;
+    const matchYear      = filterYear === 'all' || String(s.year_level) === filterYear;
+    const matchClassroom = filterClassroom === 'all' || (s.classroom || '') === filterClassroom;
+    return matchSearch && matchSection && matchYear && matchClassroom;
   });
 
   // ---- open edit ----
@@ -115,6 +128,7 @@ export default function StudentsPage() {
       nickname:      s.nickname || '',
       student_id:    s.student_id || '',
       year_level:    String(s.year_level || ''),
+      classroom:     s.classroom || '',
       section_id:    s.section_id || '',
       instrument_id: s.instrument_id || '',
       is_in_club:    s.is_in_club,
@@ -136,6 +150,7 @@ export default function StudentsPage() {
         nickname:      editForm.nickname?.trim() || null,
         student_id:    editForm.student_id?.trim() || null,
         year_level:    editForm.year_level ? Number(editForm.year_level) : null,
+        classroom:     editForm.classroom?.trim() || null,
         section_id:    editForm.section_id || null,
         instrument_id: editForm.instrument_id || null,
         is_in_club:    editForm.is_in_club ?? true,
@@ -192,6 +207,7 @@ export default function StudentsPage() {
         role:          'student',
         student_id:    addForm.student_id.trim() || null,
         year_level:    Number(addForm.year_level),
+        classroom:     addForm.classroom.trim() || null,
         section_id:    addForm.section_id || null,
         instrument_id: addForm.instrument_id || null,
         is_in_club:    addForm.is_in_club,
@@ -206,6 +222,7 @@ export default function StudentsPage() {
           role:          'student',
           student_id:    addForm.student_id.trim() || null,
           year_level:    Number(addForm.year_level),
+          classroom:     addForm.classroom.trim() || null,
           section_id:    addForm.section_id || null,
           instrument_id: addForm.instrument_id || null,
           is_in_club:    addForm.is_in_club,
@@ -326,6 +343,13 @@ export default function StudentsPage() {
                 {[1,2,3,4,5,6].map(y => <SelectItem key={y} value={String(y)}>ม.{y}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Select value={filterClassroom} onValueChange={setFilterClassroom}>
+              <SelectTrigger className="w-28 h-9 text-xs"><SelectValue placeholder="ทุกห้อง" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ทุกห้อง</SelectItem>
+                {CLASSROOM_OPTIONS.map(c => <SelectItem key={c} value={c}>ม.{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
 
           <Card>
@@ -336,7 +360,7 @@ export default function StudentsPage() {
                     <tr className="border-b border-border bg-muted/30 text-xs text-muted-foreground">
                       <th className="text-left p-3 font-medium">นักเรียน</th>
                       <th className="text-left p-3 font-medium hidden md:table-cell">Section / เครื่อง</th>
-                      <th className="text-center p-3 font-medium">ชั้น</th>
+                      <th className="text-center p-3 font-medium">ชั้น / ห้อง</th>
                       <th className="text-center p-3 font-medium hidden lg:table-cell">ชุมนุม</th>
                       <th className="text-right p-3 font-medium">แก้ไข</th>
                     </tr>
@@ -380,9 +404,14 @@ export default function StudentsPage() {
                           </div>
                         </td>
                         <td className="p-3 text-center">
-                          <Badge variant="outline" className="text-xs">
-                            {s.year_level ? `ม.${s.year_level}` : '-'}
-                          </Badge>
+                          <div className="flex flex-col items-center gap-0.5">
+                            <Badge variant="outline" className="text-xs">
+                              {s.year_level ? `ม.${s.year_level}` : '-'}
+                            </Badge>
+                            {s.classroom && (
+                              <span className="text-[10px] text-muted-foreground">ห้อง {s.classroom}</span>
+                            )}
+                          </div>
                         </td>
                         <td className="p-3 text-center hidden lg:table-cell">
                           <span className={`text-xs font-medium ${s.is_in_club ? 'text-green-400' : 'text-muted-foreground'}`}>
@@ -507,6 +536,19 @@ export default function StudentsPage() {
                   <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                   <SelectContent>
                     {[1,2,3,4,5,6].map(y => <SelectItem key={y} value={String(y)}>ม.{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">ห้องเรียน</Label>
+                <Select
+                  value={editForm.classroom || '__none__'}
+                  onValueChange={v => setEditForm(f => ({ ...f, classroom: v === '__none__' ? '' : v }))}
+                >
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— ไม่ระบุ —</SelectItem>
+                    {CLASSROOM_OPTIONS.map(c => <SelectItem key={c} value={c}>ม.{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -665,6 +707,19 @@ export default function StudentsPage() {
                   <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                   <SelectContent>
                     {[1,2,3,4,5,6].map(y => <SelectItem key={y} value={String(y)}>ม.{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">ห้องเรียน</Label>
+                <Select
+                  value={addForm.classroom || '__none__'}
+                  onValueChange={v => setAddForm(f => ({ ...f, classroom: v === '__none__' ? '' : v }))}
+                >
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— ไม่ระบุ —</SelectItem>
+                    {CLASSROOM_OPTIONS.map(c => <SelectItem key={c} value={c}>ม.{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
