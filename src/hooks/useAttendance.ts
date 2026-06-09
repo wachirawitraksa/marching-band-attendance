@@ -39,11 +39,21 @@ export function useAttendance(date?: string) {
       
       if (!sessions?.length) { setMyRecords([]); return; }
       
+      const sessionIds = sessions.map(s => s.id);
+
       const { data, error } = await supabase
         .from('attendance_records')
-        .select('*, session:practice_sessions(*)')
+        .select(`
+          *,
+          student:profiles!attendance_records_student_id_fkey(
+            *, 
+            section:sections(*), 
+            instrument:instruments(*)
+          )
+        `)
         .eq('student_id', profile.id)
-        .in('session_id', sessions.map(s => s.id));
+        .in('session_id', sessionIds)
+        .order('created_at');
 
       if (error) throw error;
       setMyRecords(data || []);
@@ -215,7 +225,7 @@ export function useAllAttendance(sessionId?: string) {
     try {
       const { data, error } = await supabase
         .from('attendance_records')
-        .select('*, student:profiles(*, section:sections(*), instrument:instruments(*))')
+        .select('*, student:profiles!attendance_records_student_id_fkey(*, section:sections(*), instrument:instruments(*))')
         .eq('session_id', sessionId)
         .order('created_at');
 
