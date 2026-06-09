@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   MapPin, QrCode, Clock, CheckCircle2, XCircle, AlertCircle,
   Loader2, FileText, Navigation, RefreshCw, Info, UserCheck
@@ -42,6 +42,7 @@ export default function AttendancePage() {
   const [overrideStatus, setOverrideStatus] = useState<'present' | 'absent' | 'late' | 'excused'>('present');
   const [overrideNote, setOverrideNote] = useState('');
   const [savingOverride, setSavingOverride] = useState(false);
+  const refetchOverrideRef = useRef<(() => void) | null>(null);
 
   const handleCheckIn = async (sessionId: string) => {
     if (!profile) return;
@@ -123,10 +124,12 @@ export default function AttendancePage() {
         }, { onConflict: 'session_id,student_id' });
       if (error) throw error;
       toast({ variant: 'success', title: 'บันทึกแล้ว' });
+      refetchOverrideRef.current?.();
       setOverrideDialog(null);
       setOverrideNote('');
+      setOverrideStatus('present');
     } catch (err) {
-      toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' });
+      toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด', description: err instanceof Error ? err.message : '' });
     } finally {
       setSavingOverride(false);
     }
@@ -289,9 +292,12 @@ export default function AttendancePage() {
               {isTeacher && (
                 <TeacherAttendanceView
                   sessionId={session.id}
-                  onOverride={(studentId, studentName) =>
-                    setOverrideDialog({ open: true, studentId, sessionId: session.id, studentName })
-                  }
+                  onOverride={(studentId, studentName) => {
+                    setOverrideStatus('present');
+                    setOverrideNote('');
+                    setOverrideDialog({ open: true, studentId, sessionId: session.id, studentName });
+                  }}
+                  onRefetch={(fn) => { refetchOverrideRef.current = fn; }}
                 />
               )}
             </CardContent>
@@ -389,8 +395,12 @@ export default function AttendancePage() {
   );
 }
 
-function TeacherAttendanceView({ sessionId, onOverride }: { sessionId: string; onOverride: (id: string, name: string) => void }) {
-  const { records, loading } = useAllAttendance(sessionId);
+function TeacherAttendanceView({ sessionId, onOverride, onRefetch }: { sessionId: string; onOverride: (id: string, name: string) => void; onRefetch?: (fn: () => void) => void }) {
+  const { records, loading, refetch } = useAllAttendance(sessionId);
+
+  useEffect(() => {
+    onRefetch?.(refetch);
+  }, [refetch]);
   const [allStudents, setAllStudents] = useState<Profile[]>([]);
 
   useEffect(() => {
