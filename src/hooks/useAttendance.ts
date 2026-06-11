@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PracticeSession, AttendanceRecord, SessionType } from '@/types';
 import { useAuthStore } from '@/store/authStore';
-import { getTodayBangkok, getCheckInStatus } from '@/lib/utils';
+import { getTodayBangkok, getCheckInStatus, isPastAttendanceWindow, ATTENDANCE_RULES } from '@/lib/utils';
 
 export function useAttendance(date?: string) {
   const { profile } = useAuthStore();
@@ -259,4 +259,61 @@ export function useAllAttendance(sessionId?: string) {
   }, [sessionId, fetchRecords]);
 
   return { records, loading, refetch: fetchRecords };
+}
+
+/**
+ * สแกนทุก session ของวันนี้ที่เลยหน้าต่างเวลาแล้ว
+ * นักเรียนที่ยังไม่มี record → insert 'absent' อัตโนมัติ
+ * เรียกจาก useEffect ใน AttendancePage ทุก 1 นาที
+ */
+export async function markAbsentOverdue(date: string): Promise<void> {
+  // ดึง sessions ของวันนี้
+  const { data: sessions } = await supabase
+    .from('practice_sessions')
+    .select('id, session_type')
+    .eq('date', date);
+
+  if (!sessions?.length) return;
+
+  // กรองเฉพาะ session ที่เลยเวลาแล้ว
+  const overdueSessions = sessions.filter(s =>
+    isPastAttendanceWindow(s.session_type as SessionType)
+  );
+  if (!overdueSessions.length) return;
+
+  // ดึงนักเรียนทั้งหมดที่ active
+  const { data: students } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('role', 'student')
+    .eq('is_active', true)
+    .eq('is_graduated', false);
+
+  if (!students?.length) return;
+
+  for (const session of overdueSessions) {
+    // ดึง records ที่มีอยู่แล้วสำหรับ session นี้
+    const { data: existing } = await supabase
+      .from('attendance_records')
+      .select('student_id')
+      .eq('session_id', session.id);
+
+    const checkedIds = new Set((existing || []).map(r => r.student_id));
+
+    // สร้าง absent records สำหรับนักเรียนที่ยังไม่เช็ค
+    const absentRecords = students
+      .filter(s => !checkedIds.has(s.id))
+      .map(s => ({
+        session_id: session.id,
+        student_id: s.id,
+        status: 'absent' as const,
+        check_in_time: null,
+      }));
+
+    if (absentRecords.length > 0) {
+      await supabase
+        .from('attendance_records')
+        .upsert(absentRecords, { onConflict: 'session_id,student_id', ignoreDuplicates: true });
+    }
+  }
 }

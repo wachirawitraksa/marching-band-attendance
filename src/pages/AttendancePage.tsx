@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   MapPin, QrCode, Clock, CheckCircle2, XCircle, AlertCircle,
   Loader2, FileText, Navigation, RefreshCw, Info, UserCheck
@@ -10,15 +10,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAuthStore } from '@/store/authStore';
-import { useAttendance } from '@/hooks/useAttendance';
+import { useAttendance, markAbsentOverdue } from '@/hooks/useAttendance';
 import { useGPS } from '@/hooks/useGPS';
 import { useAllAttendance } from '@/hooks/useAttendance';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import {
-  formatThaiDate, formatTime, getDayOfWeekThai, isWithinAttendanceWindow, getAvatarFallback, getTodayBangkok
+  formatThaiDate, formatTime, getDayOfWeekThai, isWithinAttendanceWindow, isPastAttendanceWindow, getAvatarFallback, getTodayBangkok
 } from '@/lib/utils';
-import { AttendanceRecord, Profile, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
+import { AttendanceRecord, Profile, SessionType, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -37,12 +37,18 @@ export default function AttendancePage() {
   const isTeacher = profile?.role === 'admin' || profile?.role === 'teacher';
   const now = new Date();
 
+  // Auto-mark absent สำหรับนักเรียนที่ไม่เช็คชื่อหลังหมดเวลา (ทำงานทุก 60 วินาที)
+  useEffect(() => {
+    markAbsentOverdue(today);
+    const timer = setInterval(() => markAbsentOverdue(today), 60_000);
+    return () => clearInterval(timer);
+  }, [today]);
+
   // Teacher override
   const [overrideDialog, setOverrideDialog] = useState<{ open: boolean; studentId: string; sessionId: string; studentName: string } | null>(null);
   const [overrideStatus, setOverrideStatus] = useState<'present' | 'absent' | 'late' | 'excused'>('present');
   const [overrideNote, setOverrideNote] = useState('');
   const [savingOverride, setSavingOverride] = useState(false);
-  const refetchOverrideRef = useRef<(() => void) | null>(null);
 
   const handleCheckIn = async (sessionId: string) => {
     if (!profile) return;
@@ -124,16 +130,18 @@ export default function AttendancePage() {
         }, { onConflict: 'session_id,student_id' });
       if (error) throw error;
       toast({ variant: 'success', title: 'บันทึกแล้ว' });
-      refetchOverrideRef.current?.();
       setOverrideDialog(null);
       setOverrideNote('');
-      setOverrideStatus('present');
     } catch (err) {
-      toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด', description: err instanceof Error ? err.message : '' });
+      toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' });
     } finally {
       setSavingOverride(false);
     }
   };
+
+  // helper สำหรับแสดง message ที่ถูกต้อง
+  const isPastWindow = (sessionType: SessionType) =>
+    isPastAttendanceWindow(sessionType);
 
   if (loading) {
     return (
@@ -268,7 +276,7 @@ export default function AttendancePage() {
                           <><MapPin size={16} /> เช็คชื่อ (GPS)</>
                         )}
                       </Button>
-                      {!isOpen && (
+                      {!isOpen && isTeacher && (
                         <Button
                           variant="outline" className="flex-1 gap-2"
                           onClick={() => setReasonDialog({ open: true, sessionId: session.id, sessionName: SESSION_TYPE_LABELS[session.session_type] })}
@@ -282,7 +290,9 @@ export default function AttendancePage() {
                   {!isOpen && !myRecord && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Info size={12} />
-                      ยังไม่ถึงเวลาเช็คชื่อ หรือหมดเวลาแล้ว
+                      {isPastWindow(session.session_type)
+                        ? 'หมดเวลาเช็คชื่อแล้ว — ระบบบันทึกเป็นขาดซ้อม'
+                        : 'ยังไม่ถึงเวลาเช็คชื่อ'}
                     </p>
                   )}
                 </div>
@@ -292,12 +302,9 @@ export default function AttendancePage() {
               {isTeacher && (
                 <TeacherAttendanceView
                   sessionId={session.id}
-                  onOverride={(studentId, studentName) => {
-                    setOverrideStatus('present');
-                    setOverrideNote('');
-                    setOverrideDialog({ open: true, studentId, sessionId: session.id, studentName });
-                  }}
-                  onRefetch={(fn) => { refetchOverrideRef.current = fn; }}
+                  onOverride={(studentId, studentName) =>
+                    setOverrideDialog({ open: true, studentId, sessionId: session.id, studentName })
+                  }
                 />
               )}
             </CardContent>
@@ -395,12 +402,8 @@ export default function AttendancePage() {
   );
 }
 
-function TeacherAttendanceView({ sessionId, onOverride, onRefetch }: { sessionId: string; onOverride: (id: string, name: string) => void; onRefetch?: (fn: () => void) => void }) {
-  const { records, loading, refetch } = useAllAttendance(sessionId);
-
-  useEffect(() => {
-    onRefetch?.(refetch);
-  }, [refetch]);
+function TeacherAttendanceView({ sessionId, onOverride }: { sessionId: string; onOverride: (id: string, name: string) => void }) {
+  const { records, loading } = useAllAttendance(sessionId);
   const [allStudents, setAllStudents] = useState<Profile[]>([]);
 
   useEffect(() => {

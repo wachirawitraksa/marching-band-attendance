@@ -112,24 +112,43 @@ export function getBangkokDayOfWeek(base: Date = new Date()): number {
  *  - lateUntil    : เช็คภายในเวลานี้ = มาสาย (late) — เลยจากนี้ถือว่าขาด (absent) และปิดรับเช็ค
  */
 export const ATTENDANCE_RULES: Record<SessionType, { open: number; presentUntil: number; lateUntil: number } | null> = {
-  // ซ้อมเช้า จ.–ศ.: เช็คได้ตั้งแต่ตี 5, ปกติถึง 07:45, สาย 07:46–08:09, ตั้งแต่ 08:10 ขาด
+  // ซ้อมเช้า จ.–ศ.:
+  //   เปิดรับเช็ค: 05:00
+  //   มาปกติ:     05:00–07:45
+  //   มาสาย:      07:46–08:09
+  //   ขาด/ปิด:    08:10 เป็นต้นไป (ไม่รับเช็คอีก → ระบบอัพเดตเป็นขาดอัตโนมัติ)
   morning: { open: 5 * 60, presentUntil: 7 * 60 + 45, lateUntil: 8 * 60 + 9 },
-  // คาบชุมนุม: เช็คได้ตั้งแต่ 15:20, ปกติถึง 15:35, สาย 15:36–15:45, ตั้งแต่ 15:46 ขาด
+  // คาบชุมนุม:
+  //   เปิดรับเช็ค: 15:20
+  //   มาปกติ:     15:20–15:35
+  //   มาสาย:      15:36–15:45
+  //   ขาด/ปิด:    15:46 เป็นต้นไป (ไม่รับเช็คอีก → ระบบอัพเดตเป็นขาดอัตโนมัติ)
   club: { open: 15 * 60 + 20, presentUntil: 15 * 60 + 35, lateUntil: 15 * 60 + 45 },
   // ซ้อมพิเศษ: ครูควบคุมเอง ไม่มีกติกาเวลาตายตัว
   extra: null,
 };
 
-/** คำนวณสถานะการเช็คชื่อจากเวลาไทยปัจจุบัน: present / late / absent */
+/**
+ * คำนวณสถานะการเช็คชื่อจากเวลาไทยปัจจุบัน: present / late / absent
+ * โยน Error ถ้าเช็คนอกหน้าต่างเวลาที่อนุญาต (ก่อนเปิด หรือ หลังปิด)
+ */
 export function getCheckInStatus(
   sessionType: SessionType,
   minutes: number = getBangkokMinutesOfDay(),
 ): AttendanceStatus {
   const rule = ATTENDANCE_RULES[sessionType];
-  if (!rule) return 'present'; // ซ้อมพิเศษ: เช็คเมื่อไรก็นับว่ามา
+  if (!rule) return 'present'; // ซ้อมพิเศษ: ครูควบคุมเอง
+
+  if (minutes < rule.open) {
+    const openH = String(Math.floor(rule.open / 60)).padStart(2, '0');
+    const openM = String(rule.open % 60).padStart(2, '0');
+    throw new Error(`ยังไม่ถึงเวลาเช็คชื่อ — เปิดรับเช็คเวลา ${openH}:${openM} น.`);
+  }
+  if (minutes > rule.lateUntil) {
+    throw new Error('หมดเวลาเช็คชื่อแล้ว — ระบบบันทึกเป็นขาดซ้อมอัตโนมัติ');
+  }
   if (minutes <= rule.presentUntil) return 'present';
-  if (minutes <= rule.lateUntil) return 'late';
-  return 'absent';
+  return 'late';
 }
 
 export function isWithinAttendanceWindow(sessionType: SessionType, date?: Date, startTime?: string, endTime?: string): boolean {
@@ -200,6 +219,21 @@ export function getAcademicYearOf(date: string | Date): number {
   const month = d.getUTCMonth() + 1;
   const buddhistYear = d.getUTCFullYear() + 543;
   return month >= 5 ? buddhistYear : buddhistYear - 1;
+}
+
+
+/**
+ * ตรวจว่ารอบนี้ควรถูกปิดและ mark absent หรือยัง
+ * คืน true ถ้าเลยหน้าต่าง lateUntil แล้ว (ควร auto-mark absent)
+ */
+export function isPastAttendanceWindow(sessionType: SessionType, minutes: number = getBangkokMinutesOfDay()): boolean {
+  const rule = ATTENDANCE_RULES[sessionType];
+  if (!rule) return false; // ซ้อมพิเศษ: ไม่มี auto-close
+  if (sessionType === 'morning') {
+    const dayOfWeek = getBangkokDayOfWeek();
+    if (dayOfWeek < 1 || dayOfWeek > 5) return false;
+  }
+  return minutes > rule.lateUntil;
 }
 
 export function getAvatarFallback(name: string): string {
