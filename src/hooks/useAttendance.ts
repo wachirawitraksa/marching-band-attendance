@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PracticeSession, AttendanceRecord, SessionType } from '@/types';
 import { useAuthStore } from '@/store/authStore';
-import { getTodayBangkok, getCheckInStatus, isPastAttendanceWindow, ATTENDANCE_RULES } from '@/lib/utils';
+import { getTodayBangkok, getCheckInStatus, isPastAttendanceWindow, isWithinAttendanceWindow, ATTENDANCE_RULES } from '@/lib/utils';
 
 export function useAttendance(date?: string) {
   const { profile } = useAuthStore();
@@ -82,14 +82,22 @@ export function useAttendance(date?: string) {
       throw new Error('คุณเช็คชื่อไปแล้วในรอบนี้');
     }
 
-    // ตรวจว่ามาปกติ / สาย / ขาด ตามเวลาไทย (กติกากลางใน utils)
+    // ดึงข้อมูล session เพื่อตรวจเวลา
     const { data: session } = await supabase
       .from('practice_sessions')
-      .select('session_type, start_time')
+      .select('session_type, start_time, end_time')
       .eq('id', sessionId)
       .single();
 
-    const checkInStatus = getCheckInStatus((session?.session_type as SessionType) || 'extra');
+    const sessionType = (session?.session_type as SessionType) || 'extra';
+
+    // ตรวจหน้าต่างเวลา — บล็อกทั้งก่อนเปิดและหลังปิด
+    if (!isWithinAttendanceWindow(sessionType, new Date(), session?.start_time, session?.end_time)) {
+      throw new Error('ไม่อยู่ในช่วงเวลาเช็คชื่อที่กำหนด');
+    }
+
+    // คำนวณสถานะ (present / late) — จะโยน Error อีกชั้นถ้านอกช่วง
+    const checkInStatus = getCheckInStatus(sessionType);
 
 
     const record = {
@@ -158,12 +166,19 @@ export function useAttendance(date?: string) {
 
     if (sessionError || !session) throw new Error('QR Code ไม่ถูกต้อง');
 
+    // ตรวจหน้าต่างเวลา — QR ก็ต้องอยู่ในเวลาที่กำหนดเช่นกัน
+    const sessionType = session.session_type as SessionType;
+    if (!isWithinAttendanceWindow(sessionType, new Date(), session.start_time, session.end_time)) {
+      throw new Error('ไม่อยู่ในช่วงเวลาเช็คชื่อที่กำหนด');
+    }
+    const qrStatus = getCheckInStatus(sessionType);
+
     const { data, error } = await supabase
       .from('attendance_records')
       .upsert({
         session_id: sessionId,
         student_id: profile.id,
-        status: 'present',
+        status: qrStatus,
         check_in_time: new Date().toISOString(),
         qr_code_used: true,
       }, { onConflict: 'session_id,student_id' })
