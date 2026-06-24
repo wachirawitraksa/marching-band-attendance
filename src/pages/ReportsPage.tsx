@@ -12,6 +12,7 @@ import { useAuthStore } from '@/store/authStore';
 import { formatThaiDate, getAvatarFallback, calculateAttendanceRate, getAcademicYearOf, getCurrentAcademicYear } from '@/lib/utils';
 import { Profile, AttendanceRecord, Section, ATTENDANCE_STATUS_LABELS } from '@/types';
 import { StudentCalendarReport } from '@/components/reports/StudentCalendarReport';
+import { ExportReportDialog } from '@/components/reports/ExportReportDialog';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, PieChart, Pie, Cell
@@ -132,6 +133,7 @@ export default function ReportsPage() {
               {sections.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
             </SelectContent>
           </Select>
+          <ExportReportDialog students={filtered} />
         </div>
       </div>
 

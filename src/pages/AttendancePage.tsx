@@ -157,6 +157,7 @@ export default function AttendancePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">เช็คชื่อ</h1>
+          <h3>หากลา ให้แจ้งครู</h3>
           <p className="text-sm text-muted-foreground">
             วัน{getDayOfWeekThai(now)}ที่ {formatThaiDate(now)}
           </p>

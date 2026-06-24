@@ -84,7 +84,7 @@ export default function SchedulePage() {
 
     if (tomDow >= 1 && tomDow <= 5 && !holDates.has(tomStr) && !isInRange(tomStr)) {
       await supabase.from('practice_sessions').upsert(
-        { date: tomStr, start_time: '07:00', end_time: '08:10', session_type: 'morning', description: 'ซ้อมเช้า (ห้ามสายเกิน 7:45 น.)' },
+        { date: tomStr, start_time: '07:00', end_time: '08:30', session_type: 'morning', description: 'ซ้อมเช้า (ห้ามสายเกิน 7:45 น.)' },
         { onConflict: 'date,session_type', ignoreDuplicates: true }
       );
       if (tomDow === 4) {
