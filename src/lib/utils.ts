@@ -113,7 +113,7 @@ export function getBangkokDayOfWeek(base: Date = new Date()): number {
  */
 export const ATTENDANCE_RULES: Record<SessionType, { open: number; presentUntil: number; lateUntil: number } | null> = {
   // ซ้อมเช้า จ.–ศ.: เช็คได้ตั้งแต่ตี 5, ปกติถึง 07:45, สาย 07:46–08:09, ตั้งแต่ 08:10 ขาด
-  morning: { open: 5 * 60, presentUntil: 7 * 60 + 45, lateUntil: 8 * 60 + 10 },  // ขาดหลัง 08:10
+  morning: { open: 5 * 60, presentUntil: 7 * 60 + 45, lateUntil: 8 * 60 + 30 },  // ขาดหลัง 08:10
   // คาบชุมนุม: เช็คได้ตั้งแต่ 15:20, ปกติถึง 15:35, สาย 15:36–15:45, ตั้งแต่ 15:46 ขาด
   club: { open: 15 * 60 + 20, presentUntil: 15 * 60 + 45, lateUntil: 16 * 60 + 0 },  // ขาดหลัง 16:00
   // ซ้อมพิเศษ: ครูควบคุมเอง ไม่มีกติกาเวลาตายตัว
