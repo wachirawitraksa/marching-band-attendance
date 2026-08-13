@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
@@ -18,9 +18,6 @@ import ProfilePage from '@/pages/ProfilePage';
 import AdminPage from '@/pages/AdminPage';
 import SchedulePage from '@/pages/SchedulePage';
 import NotFoundPage from '@/pages/NotFoundPage';
-
-// Idle timeout = 3.5 ชั่วโมง (3 ชั่วโมง 30 นาที)
-const IDLE_TIMEOUT_MS = 3.5 * 60 * 60 * 1000;
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore();
@@ -52,9 +49,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { user, setUser, setProfile, setLoading, clear, theme } = useAuthStore();
+  const { setUser, setProfile, setLoading, theme } = useAuthStore();
   const navigate   = useNavigate();
-  const idleTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Apply theme on mount
   useEffect(() => {
@@ -65,50 +61,63 @@ export default function App() {
   useEffect(() => {
     setLoading(true);
 
+    // ลอง promise พร้อม timeout, ถ้าไม่ทันให้ retry อีกครั้งก่อนยอมแพ้
+    // (กันเน็ตช้าแล้วโดนตีความว่า session หมดอายุทั้งที่จริงยังไม่หมด)
+    async function withRetry<T>(fn: () => Promise<T>, timeoutMs: number, label: string): Promise<T> {
+      const attempt = () => Promise.race([
+        fn(),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`${label} timeout`)), timeoutMs)),
+      ]);
+      try {
+        return await attempt();
+      } catch {
+        // เน็ตอาจแค่ช้าชั่วคราว — ลองอีกครั้งก่อนยอมแพ้จริง
+        return await attempt();
+      }
+    }
+
     // โหลดโปรไฟล์ — เรียกได้นอก callback ของ onAuthStateChange เท่านั้น
     const loadProfile = async (userId: string) => {
       try {
-        // Timeout the profile fetch after 8 seconds
-        const profilePromise = supabase
-          .from('profiles')
-          .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
-          .eq('id', userId)
-          .single();
-
-        const profileTimeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
-        );
-
-        const { data } = await Promise.race([profilePromise, profileTimeoutPromise]);
+        const { data } = await withRetry(
+          () => supabase
+            .from('profiles')
+            .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
+            .eq('id', userId)
+            .single() as unknown as Promise<{ data: any }>,
+          12000,
+          'Profile fetch'
+        ) as unknown as { data: any };
         setProfile(data ?? null);
       } catch (profileError) {
         console.error('Profile fetch error:', profileError);
-        setProfile(null);
-        // Continue anyway - profile is optional for showing the app
+        // อย่าล้าง profile ที่ cache ไว้จากรอบก่อน (persist ผ่าน authStore แล้ว) —
+        // ปล่อยให้แอปใช้ข้อมูลเดิมต่อไปได้ระหว่างเน็ตมีปัญหาชั่วคราว แทนที่จะเด้งจอว่าง
       }
     };
 
     const initializeAuth = async () => {
       try {
-        // Set a 10-second timeout for the session check
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Session check timeout')), 10000)
+        const { data: { session } } = await withRetry(
+          () => supabase.auth.getSession(),
+          15000,
+          'Session check'
         );
-
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
 
         if (session?.user) {
           setUser(session.user);
           await loadProfile(session.user.id);
         } else {
+          // getSession() ตอบกลับมาแล้วจริงๆ ว่าไม่มี session — ค่อยเคลียร์
           setUser(null);
           setProfile(null);
         }
       } catch (error) {
-        console.error('Supabase session error:', error);
-        setUser(null);
-        setProfile(null);
+        // ทั้ง 2 รอบ (ครั้งแรก + retry) ล้มเหลวจริง — เน็ตน่าจะมีปัญหาจริงจัง
+        // ไม่ฟันธงว่า session หมดอายุ (จะได้ไม่เด้งไปหน้า login ทั้งที่ token ยังใช้ได้)
+        // ปล่อยให้ ProtectedRoute โชว์ loading ต่อ แล้วให้ onAuthStateChange
+        // หรือการเรียก API ครั้งถัดไปเป็นคนตัดสินใจแทน
+        console.error('Supabase session check failed after retry:', error);
       } finally {
         setLoading(false);
       }
@@ -141,36 +150,6 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, [setUser, setProfile, setLoading, navigate]);
-
-  // Idle timeout — logout หลังไม่มีการใช้งาน 3 ชม. 30 นาที
-  useEffect(() => {
-    if (!user) {
-      // ไม่ได้ login อยู่ — ไม่ต้องนับ
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-      return;
-    }
-
-    const signOutDueToIdle = async () => {
-      await supabase.auth.signOut();
-      clear();
-      navigate('/login', { replace: true });
-    };
-
-    const resetTimer = () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-      idleTimer.current = setTimeout(signOutDueToIdle, IDLE_TIMEOUT_MS);
-    };
-
-    // events ที่ถือว่า "active"
-    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click', 'visibilitychange'];
-    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
-    resetTimer(); // เริ่มนับครั้งแรก
-
-    return () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-      events.forEach(e => window.removeEventListener(e, resetTimer));
-    };
-  }, [user, navigate, clear]);
 
   return (
     <>

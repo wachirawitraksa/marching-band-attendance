@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ClipboardCheck, Users, TrendingUp, Calendar,
@@ -9,110 +8,46 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useAuthStore } from '@/store/authStore';
-import { supabase } from '@/lib/supabase';
 import {
   formatThaiDate, formatTime, getDayOfWeekThai,
   isWithinAttendanceWindow, getTodayBangkok, getBangkokDateWithOffset
 } from '@/lib/utils';
-import { PracticeSession, AttendanceRecord, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
+import { SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
+import {
+  useSessionsByDate, useMyAttendance, useMyAttendanceStats,
+  useActiveStudentCount, useWeeklyAttendance, useTodayAttendanceSummary,
+} from '@/hooks/useSupabaseQueries';
 
 export default function DashboardPage() {
   const { profile } = useAuthStore();
-  const [todaySessions, setTodaySessions] = useState<PracticeSession[]>([]);
-  const [myRecords, setMyRecords] = useState<AttendanceRecord[]>([]);
-  const [stats, setStats] = useState({ total: 0, present: 0, absent: 0, late: 0, excused: 0 });
-  const [weeklyData, setWeeklyData] = useState<{ day: string; มาซ้อม: number; ขาดซ้อม: number }[]>([]);
-  const [totalStudents, setTotalStudents] = useState(0);
-  const [loading, setLoading] = useState(true);
-
   const today = getTodayBangkok();
   const isTeacher = profile?.role === 'admin' || profile?.role === 'teacher';
 
-  useEffect(() => {
-    loadData();
-  }, [profile]);
+  // ทุก hook ด้านล่างนี้ cache ผ่าน React Query — สลับหน้าไป/กลับมาไม่ fetch ซ้ำ
+  const { data: todaySessions = [], isLoading: sessionsLoading } = useSessionsByDate(today);
 
-  const loadData = async () => {
-    if (!profile) return;
-    setLoading(true);
-    try {
-      // Today's sessions
-      const { data: sessions } = await supabase
-        .from('practice_sessions')
-        .select('*')
-        .eq('date', today)
-        .order('start_time');
-      setTodaySessions(sessions || []);
+  const { data: myRecords = [] } = useMyAttendance(!isTeacher ? profile?.id : undefined, 20);
+  const { data: studentStats } = useMyAttendanceStats(!isTeacher ? profile?.id : undefined);
 
-      // My attendance records
-      if (!isTeacher) {
-        const { data: records } = await supabase
-          .from('attendance_records')
-          .select('*, session:practice_sessions(*)')
-          .eq('student_id', profile.id)
-          .order('created_at', { ascending: false })
-          .limit(20);
-        setMyRecords(records || []);
+  const { data: totalStudents = 0 } = useActiveStudentCount();
+  const todaySessionIds = todaySessions.map((s) => s.id);
+  const { data: teacherTodayStats } = useTodayAttendanceSummary(isTeacher ? todaySessionIds : []);
 
-        // Stats
-        const { data: allRecords } = await supabase
-          .from('attendance_records')
-          .select('status')
-          .eq('student_id', profile.id);
-        if (allRecords) {
-          const s = { total: allRecords.length, present: 0, absent: 0, late: 0, excused: 0 };
-          allRecords.forEach(r => { s[r.status as keyof typeof s]++; });
-          setStats(s);
-        }
-      } else {
-        // Teacher: get total students & today's stats
-        const { count } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('role', 'student')
-          .eq('is_active', true)
-          .eq('is_graduated', false);
-        setTotalStudents(count || 0);
+  const days = Array.from({ length: 7 }, (_, i) => getBangkokDateWithOffset(-(6 - i)));
+  const { data: weeklyRaw = [] } = useWeeklyAttendance(days, profile?.id, isTeacher);
+  const weeklyData = weeklyRaw.map((d) => ({
+    day: getDayOfWeekThai(d.day),
+    'มาซ้อม': d.present,
+    'ขาดซ้อม': d.absent,
+  }));
 
-        // Today attendance summary
-        if (sessions && sessions.length > 0) {
-          const { data: todayRecs } = await supabase
-            .from('attendance_records')
-            .select('status')
-            .in('session_id', sessions.map(s => s.id));
-          if (todayRecs) {
-            const s = { total: todayRecs.length, present: 0, absent: 0, late: 0, excused: 0 };
-            todayRecs.forEach(r => { s[r.status as keyof typeof s]++; });
-            setStats(s);
-          }
-        }
-      }
-
-      // Weekly chart data (last 7 days) — อิงเวลาไทย
-      const days = Array.from({ length: 7 }, (_, i) => getBangkokDateWithOffset(-(6 - i)));
-
-      const chartData = await Promise.all(days.map(async (d) => {
-        const dayLabel = getDayOfWeekThai(d);
-        // For all roles: get sessions for this day, then get attendance
-        const { data: daySessions } = await supabase
-          .from('practice_sessions').select('id').eq('date', d);
-        if (!daySessions?.length) return { day: dayLabel, 'มาซ้อม': 0, 'ขาดซ้อม': 0 };
-        
-        const sessionIds = daySessions.map(s => s.id);
-        const { data } = !isTeacher
-          ? await supabase.from('attendance_records').select('status').in('session_id', sessionIds).eq('student_id', profile.id)
-          : await supabase.from('attendance_records').select('status').in('session_id', sessionIds);
-        const present = data?.filter(r => r.status === 'present' || r.status === 'late').length || 0;
-        return { day: dayLabel, 'มาซ้อม': present, 'ขาดซ้อม': data ? data.length - present : 0 };
-      }));
-      setWeeklyData(chartData);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const stats = isTeacher
+    ? (teacherTodayStats ?? { total: 0, present: 0, absent: 0, late: 0, excused: 0 })
+    : (studentStats ?? { total: 0, present: 0, absent: 0, late: 0, excused: 0 });
+  const loading = sessionsLoading;
 
   const presentRate = stats.total > 0
     ? Math.round(((stats.present + stats.late) / stats.total) * 100)

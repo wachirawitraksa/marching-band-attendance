@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
   Users, Search, Edit2, GraduationCap, UserCheck,
   Loader2, Plus, X, Save, RefreshCw, AlertTriangle
@@ -15,9 +15,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
+import { useStudents, useSections, useInstruments } from '@/hooks/useSupabaseQueries';
 import { toast } from '@/components/ui/use-toast';
 import { getAvatarFallback } from '@/lib/utils';
-import { Profile, Section, Instrument } from '@/types';
+import { Profile } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 
 // ---- ห้องเรียนทั้งหมด ม.1–6 ----
@@ -54,12 +56,17 @@ const emptyForm: StudentForm = {
 export default function StudentsPage() {
   const { profile: myProfile } = useAuthStore();
   const isAdmin = myProfile?.role === 'admin';
+  const queryClient = useQueryClient();
 
-  const [students, setStudents]       = useState<Profile[]>([]);
-  const [graduated, setGraduated]     = useState<Profile[]>([]);
-  const [sections, setSections]       = useState<Section[]>([]);
-  const [instruments, setInstruments] = useState<Instrument[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const { data: students = [], isLoading: loadingActive } = useStudents({ graduated: false });
+  const { data: graduated = [], isLoading: loadingGrad } = useStudents({ graduated: true });
+  const { data: sections = [] } = useSections();
+  const { data: instruments = [] } = useInstruments();
+  const loading = loadingActive || loadingGrad;
+
+  // เรียกหลังแก้ไข/เพิ่ม/เลื่อนชั้น เพื่อให้ทุกหน้าที่ใช้ students/profiles เห็นข้อมูลใหม่
+  const refreshStudents = () => queryClient.invalidateQueries({ queryKey: ['students'] });
+
   const [tab, setTab]                 = useState('active');
 
   // filters
@@ -80,31 +87,6 @@ export default function StudentsPage() {
   const [saving, setSaving]           = useState(false);
   const [addError, setAddError]       = useState('');
   const [promoting, setPromoting]     = useState(false);
-
-  const loadAll = useCallback(async () => {
-    setLoading(true);
-    const [{ data: active }, { data: grads }, { data: secs }, { data: insts }] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
-        .eq('role', 'student').eq('is_graduated', false).eq('is_active', true)
-        .order('full_name'),
-      supabase
-        .from('profiles')
-        .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
-        .eq('role', 'student').eq('is_graduated', true)
-        .order('full_name'),
-      supabase.from('sections').select('*').order('name'),
-      supabase.from('instruments').select('*, section:sections(*)').order('name'),
-    ]);
-    setStudents(active || []);
-    setGraduated(grads || []);
-    setSections(secs || []);
-    setInstruments(insts || []);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { loadAll(); }, [loadAll]);
 
   // ---- filtered list ----
   const filtered = students.filter(s => {
@@ -159,7 +141,7 @@ export default function StudentsPage() {
       if (error) throw error;
       toast({ variant: 'success', title: `แก้ไขข้อมูล ${editForm.full_name} แล้ว` });
       setEditDialog(null);
-      await loadAll();
+      refreshStudents();
     } catch (err) {
       toast({ variant: 'destructive', title: 'บันทึกไม่สำเร็จ', description: err instanceof Error ? err.message : '' });
     } finally {
@@ -233,7 +215,7 @@ export default function StudentsPage() {
       setAddDialog(false);
       setAddForm(emptyForm);
       setAddError('');
-      await loadAll();
+      refreshStudents();
     } catch (err) {
       setAddError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
     } finally {
@@ -257,7 +239,7 @@ export default function StudentsPage() {
       }
       toast({ variant: 'success', title: 'เลื่อนชั้นปีการศึกษาเรียบร้อย', description: 'นักเรียน ม.6 ถูกย้ายไปส่วนจบการศึกษาแล้ว' });
       setPromoteDialog(false);
-      await loadAll();
+      refreshStudents();
     } catch {
       toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' });
     } finally {
@@ -288,7 +270,7 @@ export default function StudentsPage() {
           <p className="text-sm text-muted-foreground">{students.length} คน (กำลังเรียนอยู่)</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={loadAll}>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={refreshStudents}>
             <RefreshCw size={13} /> รีเฟรช
           </Button>
           {isAdmin && (

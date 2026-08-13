@@ -52,7 +52,7 @@ export function AppLayout() {
           <Music2 size={18} className="text-brand-400" />
         </div>
         <div className="flex flex-col">
-          <span className="font-bold text-sm leading-tight text-foreground">วงโยธวาทิต</span>
+          <span className="font-bold text-sm leading-tight text-foreground">Srinan Marching Band</span>
           <span className="text-[10px] text-muted-foreground leading-tight">ระบบเช็คชื่อนักเรียน</span>
         </div>
       </div>
@@ -166,7 +166,7 @@ export function AppLayout() {
             <div className="w-7 h-7 rounded-lg bg-brand-500/20 flex items-center justify-center">
               <Music2 size={14} className="text-brand-400" />
             </div>
-            <span className="font-bold text-sm">วงโยธวาทิต</span>
+            <span className="font-bold text-sm">Srinan Marching Band</span>
           </div>
 
           <button

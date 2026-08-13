@@ -13,6 +13,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useAttendance, markAbsentOverdue } from '@/hooks/useAttendance';
 import { useGPS } from '@/hooks/useGPS';
 import { useAllAttendance } from '@/hooks/useAttendance';
+import { useStudents } from '@/hooks/useSupabaseQueries';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import {
@@ -24,6 +26,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 export default function AttendancePage() {
   const { profile } = useAuthStore();
+  const queryClient = useQueryClient();
   const today = getTodayBangkok();
   const { sessions, myRecords, loading, checkIn, submitReason, refetch } = useAttendance(today);
   const { lat, lng, distance, inRange, loading: gpsLoading, error: gpsError, schoolLocation, getCurrentPosition } = useGPS();
@@ -87,6 +90,7 @@ export default function AttendancePage() {
         gpsData.distance ?? undefined
       );
       toast({ variant: 'success', title: '✓ เช็คชื่อสำเร็จ!', description: 'บันทึกการเข้าร่วมแล้ว' });
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
     } catch (err) {
       toast({
         variant: 'destructive',
@@ -132,6 +136,8 @@ export default function AttendancePage() {
       toast({ variant: 'success', title: 'บันทึกแล้ว' });
       setOverrideDialog(null);
       setOverrideNote('');
+      // sync กับ Dashboard/Reports ที่ cache สถิติเดียวกันไว้
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
     } catch (err) {
       toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' });
     } finally {
@@ -404,14 +410,10 @@ export default function AttendancePage() {
 }
 
 function TeacherAttendanceView({ sessionId, onOverride }: { sessionId: string; onOverride: (id: string, name: string) => void }) {
-  const { records, loading } = useAllAttendance(sessionId);
-  const [allStudents, setAllStudents] = useState<Profile[]>([]);
-
-  useEffect(() => {
-    supabase.from('profiles').select('*, section:sections(*), instrument:instruments(*)')
-      .eq('role', 'student').eq('is_active', true).eq('is_graduated', false)
-      .order('full_name').then(({ data }) => setAllStudents(data || []));
-  }, []);
+  const { records, loading: recordsLoading } = useAllAttendance(sessionId);
+  // ใช้ cache เดียวกับ StudentsPage/ReportsPage — สลับหน้าไปมาไม่ fetch ซ้ำ
+  const { data: allStudents = [], isLoading: studentsLoading } = useStudents({ graduated: false, activeOnly: true });
+  const loading = recordsLoading || studentsLoading;
 
   const present = records.filter(r => r.status === 'present' || r.status === 'late').length;
   const total = allStudents.length;

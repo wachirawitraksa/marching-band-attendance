@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BarChart3, Loader2, TrendingUp, Users, Calendar, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,10 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { useSections, useStudents, useAllAttendanceRecords } from '@/hooks/useSupabaseQueries';
 import { formatThaiDate, getAvatarFallback, calculateAttendanceRate, getAcademicYearOf, getCurrentAcademicYear } from '@/lib/utils';
-import { Profile, AttendanceRecord, Section, ATTENDANCE_STATUS_LABELS } from '@/types';
+import { Profile, AttendanceRecord, ATTENDANCE_STATUS_LABELS } from '@/types';
 import { StudentCalendarReport } from '@/components/reports/StudentCalendarReport';
 import { ExportReportDialog } from '@/components/reports/ExportReportDialog';
 import {
@@ -20,10 +20,11 @@ import {
 
 export default function ReportsPage() {
   const { profile } = useAuthStore();
-  const [loading, setLoading] = useState(true);
-  const [sections, setSections] = useState<Section[]>([]);
-  const [students, setStudents] = useState<Profile[]>([]);
-  const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
+  const { data: sections = [], isLoading: sectionsLoading } = useSections();
+  const { data: students = [], isLoading: studentsLoading } = useStudents({ graduated: false, activeOnly: true });
+  const { data: allRecords = [], isLoading: recordsLoading } = useAllAttendanceRecords();
+  const loading = sectionsLoading || studentsLoading || recordsLoading;
+
   const [filterSection, setFilterSection] = useState('all');
   const [filterYear, setFilterYear] = useState(String(getCurrentAcademicYear()));
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth().toString());
@@ -31,21 +32,6 @@ export default function ReportsPage() {
   const [calendarStudent, setCalendarStudent] = useState<Profile | null>(null);
 
   const isTeacher = profile?.role === 'admin' || profile?.role === 'teacher';
-
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    setLoading(true);
-    const [{ data: secs }, { data: studs }, { data: recs }] = await Promise.all([
-      supabase.from('sections').select('*').order('name'),
-      supabase.from('profiles').select('*, section:sections(*), instrument:instruments(*)').eq('role', 'student').eq('is_active', true).eq('is_graduated', false).order('full_name'),
-      supabase.from('attendance_records').select('*, session:practice_sessions(*)').order('created_at', { ascending: false }),
-    ]);
-    setSections(secs || []);
-    setStudents(studs || []);
-    setAllRecords(recs || []);
-    setLoading(false);
-  };
 
   const filtered = students.filter(s => filterSection === 'all' || s.section_id === filterSection);
 

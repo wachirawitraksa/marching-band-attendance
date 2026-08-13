@@ -12,12 +12,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
 import { getAvatarFallback } from '@/lib/utils';
 import { Profile, ROLE_LABELS } from '@/types';
 
 export default function ProfilePage() {
   const { setProfile } = useAuthStore();
+  const queryClient = useQueryClient();
 
   const [profile, setLocalProfile] = useState<Profile | null>(null);
   const [loading, setLoading]       = useState(true);
@@ -124,6 +126,9 @@ export default function ProfilePage() {
         .eq('id', profile.id);
       if (error) throw error;
       await fetchProfile();
+      // ให้ StudentsPage/AdminPage/หน้าเช็คชื่อ (ครู) เห็นชื่อเล่นใหม่ทันที
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
       toast({ variant: 'success', title: 'บันทึกชื่อเล่นแล้ว' });
     } catch (err) {
       toast({ variant: 'destructive', title: 'บันทึกไม่สำเร็จ', description: err instanceof Error ? err.message : '' });
@@ -151,6 +156,8 @@ export default function ProfilePage() {
       const url = `${data.publicUrl}?t=${Date.now()}`;
       await supabase.from('profiles').update({ profile_picture_url: url }).eq('id', profile.id);
       await fetchProfile();
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
       toast({ variant: 'success', title: 'อัปโหลดรูปสำเร็จ' });
     } catch (err) {
       toast({ variant: 'destructive', title: 'อัปโหลดไม่สำเร็จ', description: err instanceof Error ? err.message : '' });

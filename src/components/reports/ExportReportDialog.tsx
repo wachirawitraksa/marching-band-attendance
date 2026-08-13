@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { Profile, PracticeSession, AttendanceRecord, AttendanceStatus } from '@/types';
 import { formatThaiDate, getTodayBangkok, normalizeInputDate } from '@/lib/utils';
 import { downloadAttendancePDF, ReportSession, ReportRow } from './AttendanceReportPDF';
+import { shouldExcludeFromStats } from '@/lib/attendanceExemption';
 
 const DAY_TH = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
 
@@ -129,11 +130,13 @@ export function ExportReportDialog({ students }: Props) {
         };
       });
 
-      // 5. สร้าง ReportRow ต่อนักเรียน
+      // 5. สร้าง ReportRow ต่อนักเรียน — คนที่ไม่อยู่ชุมนุมดนตรี (ไป ร.ด.) จะขึ้น "นศท." ช่วงพฤหัสบ่าย แทนสถานะจริง
       const rows: ReportRow[] = students.map(student => {
-        const statusMap: Record<string, AttendanceStatus | null> = {};
+        const statusMap: Record<string, AttendanceStatus | 'rd_exempt' | null> = {};
         sessions.forEach(s => {
-          statusMap[s.id] = lookup[`${student.id}__${s.id}`] ?? null;
+          statusMap[s.id] = shouldExcludeFromStats(s, student)
+            ? 'rd_exempt'
+            : (lookup[`${student.id}__${s.id}`] ?? null);
         });
         return { student, statusMap };
       });

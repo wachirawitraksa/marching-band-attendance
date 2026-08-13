@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
 import { formatThaiDate, formatTime, getDayOfWeekThai, getTodayBangkok, getBangkokDateWithOffset, getBangkokDayOfWeek } from '@/lib/utils';
 import { ThaiDateInput } from '@/components/ui/thai-date-input';
@@ -27,6 +28,14 @@ const FIXED_SCHEDULE = [
 export default function SchedulePage() {
   const { profile } = useAuthStore();
   const isTeacher = profile?.role === 'admin' || profile?.role === 'teacher';
+  const queryClient = useQueryClient();
+
+  // SchedulePage แก้ practice_sessions/holidays/ranges โดยตรง — sync ให้ Dashboard/AttendancePage
+  // (ที่ใช้ useSessionsByDate/useSessionsInRange จาก React Query cache) เห็นข้อมูลใหม่ทันที
+  const syncSharedCaches = () => {
+    queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    queryClient.invalidateQueries({ queryKey: ['attendance'] });
+  };
 
   const [tab, setTab] = useState('schedule');
 
@@ -132,6 +141,7 @@ export default function SchedulePage() {
       setAddDialog(false);
       setAddForm({ date: '', start_time: '07:00', end_time: '08:30', description: '' });
       await loadData();
+      syncSharedCaches();
     } catch (err) {
       toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด', description: err instanceof Error ? err.message : '' });
     } finally { setSaving(false); }
@@ -141,12 +151,20 @@ export default function SchedulePage() {
   const handleDeleteSession = async (s: PracticeSession) => {
     setDeleting(s.id);
     try {
-      await supabase.from('practice_sessions').delete().eq('id', s.id);
+      const { error } = await supabase.from('practice_sessions').delete().eq('id', s.id);
+      if (error) throw error;
+
       toast({ variant: 'success', title: 'ลบรอบซ้อมแล้ว' });
       setDeleteSession(null);
       await loadData();
-    } catch { toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' }); }
-    finally { setDeleting(null); }
+      syncSharedCaches();
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'เกิดข้อผิดพลาดในการลบรอบซ้อม',
+        description: err instanceof Error ? err.message : 'โปรดลองใหม่อีกครั้ง',
+      });
+    } finally { setDeleting(null); }
   };
 
   // ---- add holiday ----
@@ -169,6 +187,7 @@ export default function SchedulePage() {
       setHolidayDialog(false);
       setHolidayForm({ date: '', description: '' });
       await loadData();
+      syncSharedCaches();
     } catch (err) { setHolidayError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด'); }
     finally { setSavingHol(false); }
   };
@@ -177,6 +196,7 @@ export default function SchedulePage() {
     await supabase.from('holidays').delete().eq('id', id);
     toast({ variant: 'success', title: 'ลบวันหยุดแล้ว' });
     await loadData();
+    syncSharedCaches();
   };
 
   // ---- add holiday range ----
@@ -213,6 +233,7 @@ export default function SchedulePage() {
       setRangeDialog(false);
       setRangeForm({ start_date: '', end_date: '', label: '' });
       await loadData();
+      syncSharedCaches();
     } catch (err) { setRangeError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด'); }
     finally { setSavingRange(false); }
   };
@@ -224,6 +245,7 @@ export default function SchedulePage() {
       toast({ variant: 'success', title: `ลบช่วงปิดเทอม "${r.label}" แล้ว` });
       setDeleteRange(null);
       await loadData();
+      syncSharedCaches();
     } catch { toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' }); }
   };
 

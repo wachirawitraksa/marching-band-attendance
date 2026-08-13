@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Settings, UserPlus, Users, Loader2, Eye, EyeOff,
   RefreshCw, Shield, Music, BookOpen, MapPin
@@ -15,9 +15,11 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAllProfiles, useSections, useInstruments } from '@/hooks/useSupabaseQueries';
 import { toast } from '@/components/ui/use-toast';
 import { getAvatarFallback } from '@/lib/utils';
-import { Profile, Section, Instrument, Role, ROLE_LABELS } from '@/types';
+import { Profile, Role, ROLE_LABELS } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { SemesterManager } from '@/components/admin/SemesterManager';
 import { GPSSettingsManager } from '@/components/admin/GPSSettingsManager';
@@ -45,31 +47,25 @@ const defaultForm: CreateUserForm = {
 export default function AdminPage() {
   const { profile: myProfile } = useAuthStore();
   const isAdmin = myProfile?.role === 'admin';
-  const [users, setUsers] = useState<Profile[]>([]);
-  const [sections, setSections] = useState<Section[]>([]);
-  const [instruments, setInstruments] = useState<Instrument[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const { data: users = [], isLoading: usersLoading } = useAllProfiles();
+  const { data: sections = [] } = useSections();
+  const { data: instruments = [] } = useInstruments();
+  const loading = usersLoading;
+
+  // เรียกหลังสร้าง/แก้ไขผู้ใช้ เพื่อให้ profiles cache ทุกหน้าอัปเดตพร้อมกัน
+  const refreshUsers = () => {
+    queryClient.invalidateQueries({ queryKey: ['profiles'] });
+    queryClient.invalidateQueries({ queryKey: ['students'] });
+  };
+
   const [createDialog, setCreateDialog] = useState(false);
   const [form, setForm] = useState<CreateUserForm>(defaultForm);
   const [showPw, setShowPw] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
   const [tab, setTab] = useState('users');
-
-  useEffect(() => { loadAll(); }, []);
-
-  const loadAll = async () => {
-    setLoading(true);
-    const [{ data: u }, { data: s }, { data: i }] = await Promise.all([
-      supabase.from('profiles').select('*, section:sections(*), instrument:instruments(*)').order('role').order('full_name'),
-      supabase.from('sections').select('*').order('name'),
-      supabase.from('instruments').select('*, section:sections(*)').order('name'),
-    ]);
-    setUsers(u || []);
-    setSections(s || []);
-    setInstruments(i || []);
-    setLoading(false);
-  };
 
   // Validate create user form
   const validateCreate = (): string | null => {
@@ -165,7 +161,7 @@ export default function AdminPage() {
       setCreateDialog(false);
       setForm(defaultForm);
       setShowPw(false);
-      await loadAll();
+      refreshUsers();
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
@@ -180,7 +176,7 @@ export default function AdminPage() {
     const { error } = await supabase.from('profiles').update({ is_active: !current }).eq('id', userId);
     if (error) { toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' }); return; }
     toast({ variant: 'success', title: !current ? 'เปิดใช้งานแล้ว' : 'ปิดใช้งานแล้ว' });
-    await loadAll();
+    refreshUsers();
   };
 
   const handleChangeRole = async (userId: string, role: Role) => {
@@ -188,7 +184,7 @@ export default function AdminPage() {
     const { error } = await supabase.from('profiles').update({ role }).eq('id', userId);
     if (error) { toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' }); return; }
     toast({ variant: 'success', title: 'เปลี่ยน Role แล้ว' });
-    await loadAll();
+    refreshUsers();
   };
 
   const filteredInstruments = instruments.filter(i => !form.section_id || i.section_id === form.section_id);
@@ -208,7 +204,7 @@ export default function AdminPage() {
           <p className="text-sm text-muted-foreground">บัญชีผู้ใช้, ภาคเรียน และการตั้งค่า</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={loadAll}><RefreshCw size={13} /> รีเฟรช</Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={refreshUsers}><RefreshCw size={13} /> รีเฟรช</Button>
           <Button variant="gold" size="sm" className="gap-1.5" onClick={() => setCreateDialog(true)}><UserPlus size={14} /> สร้างบัญชี</Button>
         </div>
       </div>

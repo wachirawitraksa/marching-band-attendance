@@ -76,6 +76,7 @@ const styles = StyleSheet.create({
   symLate:    { fontSize: 8, fontFamily: 'Sarabun', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
   symAbsent:  { fontSize: 8, fontFamily: 'Sarabun', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
   symExcused: { fontSize: 8, fontFamily: 'Sarabun', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
+  symRd:      { fontSize: 6.5, fontFamily: 'Sarabun', color: '#666666', textAlign: 'center' },
   symEmpty:   { fontSize: 8, fontFamily: 'Sarabun', color: '#999999', textAlign: 'center' },
   // Legend
   legend: { flexDirection: 'row', gap: 12, marginTop: 8, flexWrap: 'wrap' },
@@ -98,7 +99,7 @@ export interface ReportSession {
 
 export interface ReportRow {
   student: Profile;
-  statusMap: Record<string, AttendanceStatus | null>; // session.id → status
+  statusMap: Record<string, AttendanceStatus | 'rd_exempt' | null>; // session.id → status
 }
 
 interface PDFProps {
@@ -109,11 +110,12 @@ interface PDFProps {
 }
 
 // ---- Status symbol helper (ขาวดำ-friendly) ----
-function StatusDot({ status }: { status: AttendanceStatus | null }) {
+function StatusDot({ status }: { status: AttendanceStatus | 'rd_exempt' | null }) {
   if (status === 'present') return <Text style={styles.symPresent}>/</Text>;
   if (status === 'late')    return <Text style={styles.symLate}>ส</Text>;
   if (status === 'absent')  return <Text style={styles.symAbsent}>X</Text>;
   if (status === 'excused') return <Text style={styles.symExcused}>ล</Text>;
+  if (status === 'rd_exempt') return <Text style={styles.symRd}>นศท.</Text>;
   return <Text style={styles.symEmpty}>—</Text>;
 }
 
@@ -211,6 +213,7 @@ function AttendanceDocument({ title, dateRange, sessions, rows }: PDFProps) {
               { sym: 'ส', label: 'มาสาย' },
               { sym: 'X', label: 'ขาดซ้อม' },
               { sym: 'ล', label: 'ลา' },
+              { sym: 'นศท.', label: 'ไป ร.ด. (ไม่นับขาด)' },
               { sym: '—', label: 'ไม่มีข้อมูล' },
             ].map(({ sym, label }) => (
               <View key={label} style={styles.legendItem}>

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { CheckCircle2, XCircle, Loader2, Music2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
 import { isWithinAttendanceWindow, getTodayBangkok, getCheckInStatus } from '@/lib/utils';
 import { useGPS } from '@/hooks/useGPS';
@@ -15,6 +16,7 @@ export default function QRCheckInPage() {
   const { user, profile } = useAuthStore();
   const { getCurrentPosition } = useGPS();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState('');
 
@@ -80,6 +82,7 @@ export default function QRCheckInPage() {
         }, { onConflict: 'session_id,student_id' });
 
       if (insertErr) throw insertErr;
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
       setStatus('success');
       setMessage('เช็คชื่อสำเร็จ!');
     } catch (err) {

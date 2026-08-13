@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight, X, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/lib/supabase';
+import { useStudentAllAttendance, useStudentMonthAttendance } from '@/hooks/useSupabaseQueries';
+import { filterOutRdExempt, shouldExcludeFromStats } from '@/lib/attendanceExemption';
 import { Profile, AttendanceRecord, ATTENDANCE_STATUS_LABELS, SESSION_TYPE_LABELS } from '@/types';
 import { getAvatarFallback, calculateAttendanceRate, formatTime, getAcademicYearOf, getCurrentAcademicYear, getTodayBangkok } from '@/lib/utils';
 
@@ -17,7 +18,7 @@ interface Props {
 interface DayRecord {
   date: string;
   sessions: {
-    session: { id: string; session_type: string; start_time: string; end_time: string; description: string | null };
+    session: { id: string; date: string; session_type: string; start_time: string; end_time: string; description: string | null };
     record: AttendanceRecord | null;
   }[];
 }
@@ -27,6 +28,7 @@ const STATUS_COLOR: Record<string, string> = {
   absent: 'bg-red-500',
   late: 'bg-yellow-500',
   excused: 'bg-blue-500',
+  rd: 'bg-gray-400',
   none: 'bg-muted',
 };
 
@@ -35,55 +37,27 @@ const STATUS_BG: Record<string, string> = {
   absent: 'bg-red-500/10 border-red-500/30 text-red-400',
   late: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
   excused: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+  rd: 'bg-gray-500/10 border-gray-500/30 text-gray-400',
 };
 
 export function StudentCalendarReport({ student, onClose }: Props) {
   const [viewDate, setViewDate] = useState(new Date());
-  const [dayRecords, setDayRecords] = useState<Record<string, DayRecord>>({});
-  const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [filterYear, setFilterYear] = useState(String(getCurrentAcademicYear()));
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
-  useEffect(() => { loadMonthData(); }, [year, month, student.id]);
-  useEffect(() => { loadAllRecords(); }, [student.id]);
+  // ทุกอย่าง cache ผ่าน React Query — เปิดซ้ำหรือเลื่อนเดือนไปมาไม่ fetch ใหม่
+  const { data: allRecords = [] } = useStudentAllAttendance(student.id);
+  const { data: monthData, isLoading: loading } = useStudentMonthAttendance(student.id, year, month);
 
-  const loadAllRecords = async () => {
-    const { data } = await supabase
-      .from('attendance_records')
-      .select('*, session:practice_sessions(*)')
-      .eq('student_id', student.id);
-    setAllRecords(data || []);
-  };
-
-  const loadMonthData = async () => {
-    setLoading(true);
-    // สร้างช่วงวันที่จากองค์ประกอบปี/เดือนโดยตรง (กัน timezone shift จาก toISOString)
-    const mm = String(month + 1).padStart(2, '0');
-    const lastDay = new Date(year, month + 1, 0).getDate();
-    const start = `${year}-${mm}-01`;
-    const end = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`;
-
-    const [{ data: sessions }, { data: records }] = await Promise.all([
-      supabase.from('practice_sessions').select('*').gte('date', start).lte('date', end).order('date').order('start_time'),
-      supabase.from('attendance_records').select('*, session:practice_sessions(*)')
-        .eq('student_id', student.id)
-        .gte('created_at', `${start}T00:00:00`)
-        .lte('created_at', `${end}T23:59:59`),
-    ]);
-
-    const map: Record<string, DayRecord> = {};
-    (sessions || []).forEach(session => {
-      if (!map[session.date]) map[session.date] = { date: session.date, sessions: [] };
-      const record = (records || []).find(r => r.session_id === session.id) || null;
-      map[session.date].sessions.push({ session, record });
-    });
-    setDayRecords(map);
-    setLoading(false);
-  };
+  const dayRecords: Record<string, DayRecord> = {};
+  (monthData?.sessions ?? []).forEach((session) => {
+    if (!dayRecords[session.date]) dayRecords[session.date] = { date: session.date, sessions: [] };
+    const record = (monthData?.records ?? []).find((r) => r.session_id === session.id) || null;
+    dayRecords[session.date].sessions.push({ session, record });
+  });
 
   // Build calendar grid
   const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
@@ -100,7 +74,10 @@ export function StudentCalendarReport({ student, onClose }: Props) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const dr = dayRecords[dateStr];
     if (!dr) return 'none';
-    const statuses = dr.sessions.map(s => s.record?.status || 'absent');
+    // ตัด session ที่เป็นช่วง ร.ด. ของนักเรียนคนนี้ออกก่อน (ไม่นับว่าขาด)
+    const countedSessions = dr.sessions.filter(s => !shouldExcludeFromStats({ ...s.session, session_type: s.session.session_type as any }, student));
+    if (countedSessions.length === 0) return dr.sessions.length > 0 ? 'rd' : 'none';
+    const statuses = countedSessions.map(s => s.record?.status || 'absent');
     if (statuses.every(s => s === 'present')) return 'present';
     if (statuses.some(s => s === 'absent')) return 'absent';
     if (statuses.some(s => s === 'late')) return 'late';
@@ -118,7 +95,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
   const isCurrentMonth = year === new Date().getFullYear() && month === new Date().getMonth();
 
   // Overall stats (ตามปีการศึกษาที่เลือก)
-  const scopedRecords = allRecords.filter(r =>
+  const scopedRecords = filterOutRdExempt(allRecords, student).filter(r =>
     filterYear === 'all' || (!!r.session && String(getAcademicYearOf(r.session.date)) === filterYear)
   );
   const totalPresent = scopedRecords.filter(r => r.status === 'present').length;
@@ -284,6 +261,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
                 { color: 'bg-red-500', label: 'ขาดซ้อม' },
                 { color: 'bg-blue-500', label: 'ลา' },
                 { color: 'bg-muted', label: 'ไม่มีซ้อม' },
+                { color: 'bg-gray-400', label: 'นศท. (ร.ด.)' },
               ].map(l => (
                 <div key={l.label} className="flex items-center gap-1">
                   <div className={`w-2 h-2 rounded-full ${l.color}`} />
@@ -326,7 +304,9 @@ export function StudentCalendarReport({ student, onClose }: Props) {
                       )}
                     </div>
                     <div>
-                      {record ? (
+                      {shouldExcludeFromStats({ ...session, session_type: session.session_type as any }, student) ? (
+                        <Badge variant="outline" className="text-xs text-gray-400 border-gray-500/30">นศท.</Badge>
+                      ) : record ? (
                         <Badge variant={
                           record.status === 'present' ? 'success' :
                           record.status === 'late' ? 'warning' :
