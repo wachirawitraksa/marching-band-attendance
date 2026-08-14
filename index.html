@@ -3,9 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover จำเป็นสำหรับ env(safe-area-inset-*) ที่ใช้ใน AppLayout.tsx
+         (ถ้าไม่มีบรรทัดนี้ safe-area padding บน iOS จะได้ค่า 0 เสมอ) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="ระบบเช็คชื่อนักเรียนวงโยธวาทิต" />
     <title>Srinan Marching Band</title>
+
+    <!-- PWA: Add to Home Screen -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0a0a0a" />
+
+    <!-- iOS ยังไม่อ่าน manifest.json เต็มรูปแบบ ต้องใส่ meta tag เฉพาะเพิ่ม -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="เช็คชื่อวงโย" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

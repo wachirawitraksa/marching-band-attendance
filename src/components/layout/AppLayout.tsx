@@ -52,8 +52,8 @@ export function AppLayout() {
           <Music2 size={18} className="text-brand-400" />
         </div>
         <div className="flex flex-col">
-          <span className="font-bold text-sm leading-tight text-foreground">Srinan Marching Band</span>
-          <span className="text-[10px] text-muted-foreground leading-tight">ระบบเช็คชื่อนักเรียน</span>
+          <span className="font-bold text-sm leading-tight text-foreground">Strisrinan</span>
+          <span className="text-[10px] text-muted-foreground leading-tight">Marching Band</span>
         </div>
       </div>
 
@@ -147,6 +147,7 @@ export function AppLayout() {
           "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-200 md:hidden",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
+        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <SidebarContent />
       </aside>
@@ -154,7 +155,7 @@ export function AppLayout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top header - mobile */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
+        <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-1.5 rounded-lg hover:bg-muted transition-colors"
@@ -185,7 +186,7 @@ export function AppLayout() {
         </main>
 
         {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden border-t border-border bg-card shrink-0">
+        <nav className="md:hidden border-t border-border bg-card shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="flex justify-around py-1.5">
             {visibleNav.slice(0, 5).map((item) => {
               const isActive = location.pathname === item.path;

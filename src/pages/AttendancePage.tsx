@@ -179,14 +179,14 @@ export default function AttendancePage() {
         <>
           <Alert variant={inRange ? 'success' : gpsError ? 'destructive' : 'info'}>
             <Navigation size={16} />
-            <AlertDescription className="flex items-center justify-between">
-              <span>
+            <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+              <span className="break-words">
                 {gpsLoading ? 'กำลังตรวจสอบตำแหน่ง...' :
                   gpsError ? gpsError :
                   lat ? (inRange ? `อยู่ในพื้นที่ (${distance} ม.)` : `นอกพื้นที่ (${distance} ม. จาก ${schoolLocation?.name || 'พื้นที่กำหนด'}`) :
                     'กดเพื่อตรวจสอบตำแหน่ง GPS'}
               </span>
-              <Button size="sm" variant="outline" className="h-7 text-xs ml-2" onClick={() => getCurrentPosition(true)} disabled={gpsLoading}>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => getCurrentPosition(true)} disabled={gpsLoading}>
                 {gpsLoading ? <Loader2 size={12} className="animate-spin" /> : 'ตรวจสอบ'}
               </Button>
             </AlertDescription>
