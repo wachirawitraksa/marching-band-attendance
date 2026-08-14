@@ -5,21 +5,31 @@ import { Profile, PracticeSession, AttendanceRecord, SESSION_TYPE_LABELS, Attend
 import { formatThaiDate } from '@/lib/utils';
 
 // ---- Register Thai font ----
-Font.register({
-  family: 'Sarabun',
+ Font.register({
+  family: 'Pridi',
   fonts: [
-    { src: '/fonts/Sarabun-Regular.ttf', fontWeight: 'normal' },
-    { src: '/fonts/Sarabun-Bold.ttf',    fontWeight: 'bold'   },
+    { src: '/fonts/Pridi-Regular.ttf', fontWeight: 'normal' },
+    { src: '/fonts/Pridi-Bold.ttf',    fontWeight: 'bold'   },
   ],
-});
+ });
 
 // Disable hyphenation
 Font.registerHyphenationCallback(word => [word]);
 
+// ---- Workaround: react-pdf/fontkit บั๊กกับข้อความไทย ----
+// อาการ: ช่องว่างระหว่างคำกลายเป็น "&", ตัวอักษรตัวสุดท้ายของ text run หายไป
+// สาเหตุ: font subsetting ของ fontkit map glyph ผิดกับบางอักขระไทย โดยเฉพาะ
+// ตอน text run จบพอดีที่ตัวอักษรสุดท้าย หรือช่องว่างอยู่ติดกับสระ/วรรณยุกต์บางตัว
+// วิธีแก้: (1) แทน space ปกติด้วย non-breaking space เพื่อเลี่ยง glyph ที่บั๊ก
+//          (2) เติม zero-width space ต่อท้าย กัน fontkit ตัดตัวสุดท้ายทิ้ง
+function sanitizeThaiForPdf(text: string): string {
+  return text.replace(/ /g, '\u00A0') + '\u200B';
+}
+
 // ---- Styles ----
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Sarabun',
+    fontFamily: 'Pridi',
     fontSize: 8,
     padding: 24,
     backgroundColor: '#ffffff',
@@ -32,7 +42,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    fontFamily: 'Sarabun',
+    fontFamily: 'Pridi',
     fontWeight: 'bold',
     color: '#1a1a1a',
     marginBottom: 2,
@@ -68,27 +78,27 @@ const styles = StyleSheet.create({
   cellSession: { width: 28, paddingHorizontal: 2, paddingVertical: 3, alignItems: 'center', justifyContent: 'center' },
   cellSummary: { width: 24, paddingHorizontal: 2, paddingVertical: 3, alignItems: 'center', justifyContent: 'center' },
   // Text
-  headerText: { color: '#ffffff', fontFamily: 'Sarabun', fontSize: 7 },
+  headerText: { color: '#ffffff', fontFamily: 'Pridi', fontSize: 7 },
   cellText: { fontSize: 7.5, color: '#1a1a1a' },
   cellTextCenter: { fontSize: 7.5, color: '#1a1a1a', textAlign: 'center' },
   // Status symbols (ขาวดำ-friendly)
-  symPresent: { fontSize: 8, fontFamily: 'Sarabun', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
-  symLate:    { fontSize: 8, fontFamily: 'Sarabun', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
-  symAbsent:  { fontSize: 8, fontFamily: 'Sarabun', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
-  symExcused: { fontSize: 8, fontFamily: 'Sarabun', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
-  symRd:      { fontSize: 6.5, fontFamily: 'Sarabun', color: '#666666', textAlign: 'center' },
-  symEmpty:   { fontSize: 8, fontFamily: 'Sarabun', color: '#999999', textAlign: 'center' },
+  symPresent: { fontSize: 8, fontFamily: 'Pridi', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
+  symLate:    { fontSize: 8, fontFamily: 'Pridi', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
+  symAbsent:  { fontSize: 8, fontFamily: 'Pridi', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
+  symExcused: { fontSize: 8, fontFamily: 'Pridi', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
+  symRd:      { fontSize: 6.5, fontFamily: 'Pridi', color: '#666666', textAlign: 'center' },
+  symEmpty:   { fontSize: 8, fontFamily: 'Pridi', color: '#999999', textAlign: 'center' },
   // Legend
   legend: { flexDirection: 'row', gap: 12, marginTop: 8, flexWrap: 'wrap' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   legendDot: { width: 7, height: 7, borderRadius: 3.5 },
   legendText: { fontSize: 7, color: '#666' },
   // Summary header
-  summaryLabel: { fontSize: 7, color: '#d97706', fontFamily: 'Sarabun', fontWeight: 'bold', textAlign: 'center' },
-  summaryPresent: { fontSize: 7, color: '#22c55e', fontFamily: 'Sarabun', fontWeight: 'bold', textAlign: 'center' },
-  summaryLate:    { fontSize: 7, color: '#eab308', fontFamily: 'Sarabun', fontWeight: 'bold', textAlign: 'center' },
-  summaryAbsent:  { fontSize: 7, color: '#ef4444', fontFamily: 'Sarabun', fontWeight: 'bold', textAlign: 'center' },
-  summaryExcused: { fontSize: 7, color: '#3b82f6', fontFamily: 'Sarabun', fontWeight: 'bold', textAlign: 'center' },
+  summaryLabel: { fontSize: 7, color: '#d97706', fontFamily: 'Pridi', fontWeight: 'bold', textAlign: 'center' },
+  summaryPresent: { fontSize: 7, color: '#22c55e', fontFamily: 'Pridi', fontWeight: 'bold', textAlign: 'center' },
+  summaryLate:    { fontSize: 7, color: '#eab308', fontFamily: 'Pridi', fontWeight: 'bold', textAlign: 'center' },
+  summaryAbsent:  { fontSize: 7, color: '#ef4444', fontFamily: 'Pridi', fontWeight: 'bold', textAlign: 'center' },
+  summaryExcused: { fontSize: 7, color: '#3b82f6', fontFamily: 'Pridi', fontWeight: 'bold', textAlign: 'center' },
 });
 
 // ---- Types ----
@@ -117,6 +127,25 @@ function StatusDot({ status }: { status: AttendanceStatus | 'rd_exempt' | null }
   if (status === 'excused') return <Text style={styles.symExcused}>ล</Text>;
   if (status === 'rd_exempt') return <Text style={styles.symRd}>นศท.</Text>;
   return <Text style={styles.symEmpty}>—</Text>;
+}
+
+// react-pdf/fontkit บั๊ก: ตัวอักษรไทยที่มีวรรณยุกต์/การันต์ (่ ้ ๊ ๋ ์) ติดกับ "เว้นวรรค"
+// ในสตริงเดียวกัน บางครั้ง shape ผิดกลายเป็น "&" หรือตัวสุดท้ายหาย — แก้โดยแยก render
+// ชื่อ/นามสกุลเป็นคนละ Text node แล้วเว้นระยะด้วย marginLeft (ตัวเลข ไม่ใช่ตัวอักษร)
+// แทนการฝังช่องว่างไว้ในสตริงต่อเนื่องเดียวกัน
+function StudentName({ fullName, style }: { fullName: string; style?: any }) {
+  const parts = fullName.trim().split(/\s+/);
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+      {parts.map((part, i) => (
+        <Text key={i} style={[style, i > 0 && { marginLeft: 3 }]} wrap={false}>
+          {part}
+          {/* ช่องว่างท้ายสุดกันปัญหา "ตัวสุดท้ายหาย" ตอน embed font บางกรณี */}
+          {i === parts.length - 1 ? ' ' : ''}
+        </Text>
+      ))}
+    </View>
+  );
 }
 
 // ---- PDF Document ----
@@ -177,9 +206,9 @@ function AttendanceDocument({ title, dateRange, sessions, rows }: PDFProps) {
                     <Text style={styles.cellTextCenter}>{idx + 1}</Text>
                   </View>
                   <View style={styles.cellName}>
-                    <Text style={styles.cellText}>{row.student.full_name}</Text>
+                    <StudentName fullName={row.student.full_name} style={styles.cellText} />
                     {row.student.instrument?.name && (
-                      <Text style={[styles.cellText, { color: '#999', fontSize: 6.5 }]}>
+                      <Text style={[styles.cellText, { color: '#999', fontSize: 6.5 }]} wrap={false}>
                         {row.student.instrument.name}
                       </Text>
                     )}
