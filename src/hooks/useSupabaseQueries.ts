@@ -321,6 +321,54 @@ export function useStudentMonthAttendance(studentId: string, year: number, month
 }
 
 // ---------------------------------------------------------------------------
+// Streak + badges (ตาราง streaks/badges/user_badges — ดู 001_streaks_and_badges.sql)
+// ---------------------------------------------------------------------------
+
+export interface StudentStreak {
+  current_streak: number;
+  longest_streak: number;
+}
+
+export function useStudentStreak(studentId?: string) {
+  return useQuery({
+    queryKey: ['streaks', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('streaks')
+        .select('current_streak, longest_streak')
+        .eq('student_id', studentId as string)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? { current_streak: 0, longest_streak: 0 }) as StudentStreak;
+    },
+    enabled: !!studentId,
+    staleTime: 60 * 1000,
+  });
+}
+
+export interface EarnedBadge {
+  earned_at: string;
+  badge: { code: string; name: string; description: string | null; icon: string | null };
+}
+
+export function useStudentBadges(studentId?: string) {
+  return useQuery({
+    queryKey: ['userBadges', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_badges')
+        .select('earned_at, badge:badges(code, name, description, icon)')
+        .eq('student_id', studentId as string)
+        .order('earned_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as EarnedBadge[];
+    },
+    enabled: !!studentId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Mutations — เช็คอิน / override / อัปเดตโปรไฟล์
 // ---------------------------------------------------------------------------
 
@@ -367,6 +415,9 @@ export function useCheckIn() {
       queryClient.invalidateQueries({ queryKey: ['attendance', 'bySession', newRecord.session_id] });
       queryClient.invalidateQueries({ queryKey: ['attendance', 'byStudent', newRecord.student_id] });
       queryClient.invalidateQueries({ queryKey: ['attendance', 'stats', newRecord.student_id] });
+      // trigger ฝั่ง DB คำนวณ streak/badge ใหม่ทันทีที่ attendance_records เปลี่ยน — sync cache ตาม
+      queryClient.invalidateQueries({ queryKey: ['streaks', newRecord.student_id] });
+      queryClient.invalidateQueries({ queryKey: ['userBadges', newRecord.student_id] });
     },
   });
 }

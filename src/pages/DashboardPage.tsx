@@ -1,13 +1,18 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ClipboardCheck, Users, TrendingUp, Calendar,
-  Clock, CheckCircle2, XCircle, AlertCircle, ChevronRight
+  Clock, CheckCircle2, XCircle, AlertCircle, ChevronRight, Flame, Award, MapPin
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useAuthStore } from '@/store/authStore';
+import { useAttendance } from '@/hooks/useAttendance';
+import { useGPS } from '@/hooks/useGPS';
+import { toast } from '@/components/ui/use-toast';
+import { CheckInSuccessAnimation } from '@/components/CheckInSuccessAnimation';
 import {
   formatThaiDate, formatTime, getDayOfWeekThai,
   isWithinAttendanceWindow, getTodayBangkok, getBangkokDateWithOffset
@@ -19,22 +24,31 @@ import {
 import {
   useSessionsByDate, useMyAttendance, useMyAttendanceStats,
   useActiveStudentCount, useWeeklyAttendance, useTodayAttendanceSummary,
+  useStudentStreak, useStudentBadges,
 } from '@/hooks/useSupabaseQueries';
 
 export default function DashboardPage() {
   const { profile } = useAuthStore();
   const today = getTodayBangkok();
   const isTeacher = profile?.role === 'admin' || profile?.role === 'teacher';
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // ทุก hook ด้านล่างนี้ cache ผ่าน React Query — สลับหน้าไป/กลับมาไม่ fetch ซ้ำ
   const { data: todaySessions = [], isLoading: sessionsLoading } = useSessionsByDate(today);
 
   const { data: myRecords = [] } = useMyAttendance(!isTeacher ? profile?.id : undefined, 20);
   const { data: studentStats } = useMyAttendanceStats(!isTeacher ? profile?.id : undefined);
+  const { data: streak } = useStudentStreak(!isTeacher ? profile?.id : undefined);
+  const { data: badges = [] } = useStudentBadges(!isTeacher ? profile?.id : undefined);
 
   const { data: totalStudents = 0 } = useActiveStudentCount();
   const todaySessionIds = todaySessions.map((s) => s.id);
   const { data: teacherTodayStats } = useTodayAttendanceSummary(isTeacher ? todaySessionIds : []);
+
+  // เช็คชื่อด่วนจากหน้าแรก — ใช้ hook เดียวกับหน้า Attendance เพื่อ logic ตรงกันเป๊ะ
+  const { checkIn } = useAttendance(today);
+  const { getCurrentPosition, schoolLocation } = useGPS();
 
   const days = Array.from({ length: 7 }, (_, i) => getBangkokDateWithOffset(-(6 - i)));
   const { data: weeklyRaw = [] } = useWeeklyAttendance(days, profile?.id, isTeacher);
@@ -55,6 +69,54 @@ export default function DashboardPage() {
 
   const now = new Date();
 
+  // session ที่เปิดอยู่ตอนนี้ และนักเรียนยังไม่ได้เช็คชื่อ
+  const openSession = !isTeacher
+    ? todaySessions.find((s) => {
+        const isOpen = isWithinAttendanceWindow(s.session_type, undefined, s.start_time, s.end_time);
+        const already = myRecords.find((r) => r.session_id === s.id);
+        return isOpen && !already;
+      })
+    : undefined;
+
+  const handleQuickCheckIn = async () => {
+    if (!openSession || checkingIn) return;
+    setCheckingIn(true);
+    try {
+      const gpsData = await getCurrentPosition();
+
+      if (gpsData.error) {
+        toast({ variant: 'destructive', title: 'ตรวจสอบตำแหน่งไม่ได้', description: gpsData.error });
+        return;
+      }
+      if (!gpsData.inRange) {
+        const locationLabel = schoolLocation?.name || 'พื้นที่กำหนด';
+        toast({
+          variant: 'destructive',
+          title: 'อยู่นอกพื้นที่',
+          description: `คุณอยู่ห่างจาก ${locationLabel} ${gpsData.distance} เมตร (อนุญาตสูงสุด ${schoolLocation?.allowedRadius ?? 200} เมตร)`,
+        });
+        return;
+      }
+
+      await checkIn(
+        openSession.id,
+        gpsData.lat ?? undefined,
+        gpsData.lng ?? undefined,
+        gpsData.inRange,
+        gpsData.distance ?? undefined
+      );
+      setShowSuccess(true);
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'เช็คชื่อไม่สำเร็จ',
+        description: err instanceof Error ? err.message : 'เกิดข้อผิดพลาด',
+      });
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -74,6 +136,62 @@ export default function DashboardPage() {
           </Button>
         </Link>
       </div>
+
+      {/* เช็คชื่อด่วน — โชว์เฉพาะตอนมี session เปิดอยู่และยังไม่ได้เช็ค */}
+      {!isTeacher && openSession && (
+        <Card className="border-brand-500/40 bg-gradient-to-br from-brand-500/10 to-transparent">
+          <CardContent className="p-4 flex items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Badge variant="gold" className="text-[9px] px-1.5 py-0 h-4 animate-pulse">เปิดอยู่</Badge>
+                <span className="text-sm font-semibold">{SESSION_TYPE_LABELS[openSession.session_type]}</span>
+              </div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                <MapPin size={10} /> เช็คชื่อได้ทันทีถ้าอยู่ในพื้นที่
+              </p>
+            </div>
+            <Button
+              variant="gold"
+              className="gap-1.5 shrink-0"
+              onClick={handleQuickCheckIn}
+              disabled={checkingIn}
+            >
+              {checkingIn ? (
+                <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              ) : (
+                <ClipboardCheck size={16} />
+              )}
+              เช็คชื่อเลย
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Streak + badge — ให้กำลังใจนักเรียน */}
+      {!isTeacher && (streak?.current_streak ?? 0) > 0 && (
+        <Card className="bg-gradient-to-br from-orange-500/10 to-transparent border-orange-500/20">
+          <CardContent className="p-4 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-full bg-orange-500/15 flex items-center justify-center">
+                <Flame size={20} className="text-orange-400" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-orange-400">มาซ้อมต่อเนื่อง {streak?.current_streak} ครั้งติด!</p>
+                <p className="text-xs text-muted-foreground">สถิติสูงสุด {streak?.longest_streak} ครั้ง</p>
+              </div>
+            </div>
+            {badges.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                {badges.slice(0, 4).map((b) => (
+                  <div key={b.badge.code} title={b.badge.name} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-base">
+                    {b.badge.icon || <Award size={14} className="text-brand-400" />}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -255,6 +373,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      <CheckInSuccessAnimation show={showSuccess} onDone={() => setShowSuccess(false)} />
     </div>
   );
 }
