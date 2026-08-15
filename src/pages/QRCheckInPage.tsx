@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import { isWithinAttendanceWindow, getTodayBangkok, getCheckInStatus } from '@/lib/utils';
 import { useGPS } from '@/hooks/useGPS';
 import { SessionType } from '@/types';
+import { CheckInSuccessAnimation } from '@/components/CheckInSuccessAnimation';
 
 type Status = 'loading' | 'success' | 'error' | 'already' | 'closed' | 'not_auth' | 'out_of_location';
 
@@ -19,6 +20,7 @@ export default function QRCheckInPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (!user) { setStatus('not_auth'); return; }
@@ -84,6 +86,7 @@ export default function QRCheckInPage() {
       if (insertErr) throw insertErr;
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
       setStatus('success');
+      setShowSuccess(true);
       setMessage('เช็คชื่อสำเร็จ!');
     } catch (err) {
       setStatus('error');
@@ -144,6 +147,7 @@ export default function QRCheckInPage() {
           )}
         </div>
       </div>
+      <CheckInSuccessAnimation show={showSuccess} onDone={() => setShowSuccess(false)} />
     </div>
   );
 }

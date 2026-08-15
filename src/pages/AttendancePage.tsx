@@ -23,6 +23,7 @@ import {
 import { AttendanceRecord, Profile, SessionType, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { QRCodeSVG } from 'qrcode.react';
+import { CheckInSuccessAnimation } from '@/components/CheckInSuccessAnimation';
 
 export default function AttendancePage() {
   const { profile } = useAuthStore();
@@ -32,6 +33,7 @@ export default function AttendancePage() {
   const { lat, lng, distance, inRange, loading: gpsLoading, error: gpsError, schoolLocation, getCurrentPosition } = useGPS();
 
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [reasonDialog, setReasonDialog] = useState<{ open: boolean; sessionId: string; sessionName: string }>({ open: false, sessionId: '', sessionName: '' });
   const [reason, setReason] = useState('');
   const [submittingReason, setSubmittingReason] = useState(false);
@@ -90,6 +92,7 @@ export default function AttendancePage() {
         gpsData.distance ?? undefined
       );
       toast({ variant: 'success', title: '✓ เช็คชื่อสำเร็จ!', description: 'บันทึกการเข้าร่วมแล้ว' });
+      setShowSuccess(true);
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
     } catch (err) {
       toast({
@@ -405,6 +408,8 @@ export default function AttendancePage() {
           </DialogContent>
         </Dialog>
       )}
+
+      <CheckInSuccessAnimation show={showSuccess} onDone={() => setShowSuccess(false)} />
     </div>
   );
 }
