@@ -76,6 +76,10 @@ export default function App() {
       }
     }
 
+    // ใช้แยกว่าตอนนี้เป็นการ "restore session ตอนแอปเพิ่งโหลด" หรือ "login จริง ๆ"
+    // (SIGNED_IN ยิงทั้งสองกรณี) — ก่อนเช็คเสร็จรอบแรกถือว่ายังเป็นการ restore เสมอ
+    const didInitialAuthCheck = { current: false };
+
     // โหลดโปรไฟล์ — เรียกได้นอก callback ของ onAuthStateChange เท่านั้น
     const loadProfile = async (userId: string) => {
       try {
@@ -84,10 +88,10 @@ export default function App() {
             .from('profiles')
             .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
             .eq('id', userId)
-            .single(),
+            .single() as unknown as Promise<{ data: any }>,
           12000,
           'Profile fetch'
-        );
+        ) as unknown as { data: any };
         setProfile(data ?? null);
       } catch (profileError) {
         console.error('Profile fetch error:', profileError);
@@ -95,8 +99,6 @@ export default function App() {
         // ปล่อยให้แอปใช้ข้อมูลเดิมต่อไปได้ระหว่างเน็ตมีปัญหาชั่วคราว แทนที่จะเด้งจอว่าง
       }
     };
-
-    const didInitialAuthCheck = { current: false };
 
     const initializeAuth = async () => {
       try {
