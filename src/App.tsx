@@ -84,10 +84,10 @@ export default function App() {
             .from('profiles')
             .select('*, section:sections(*), instrument:instruments(*, section:sections(*))')
             .eq('id', userId)
-            .single() as unknown as Promise<{ data: any }>,
+            .single(),
           12000,
           'Profile fetch'
-        ) as unknown as { data: any };
+        );
         setProfile(data ?? null);
       } catch (profileError) {
         console.error('Profile fetch error:', profileError);
@@ -95,6 +95,8 @@ export default function App() {
         // ปล่อยให้แอปใช้ข้อมูลเดิมต่อไปได้ระหว่างเน็ตมีปัญหาชั่วคราว แทนที่จะเด้งจอว่าง
       }
     };
+
+    const didInitialAuthCheck = { current: false };
 
     const initializeAuth = async () => {
       try {
@@ -120,6 +122,7 @@ export default function App() {
         console.error('Supabase session check failed after retry:', error);
       } finally {
         setLoading(false);
+        didInitialAuthCheck.current = true;
       }
     };
 
@@ -134,7 +137,12 @@ export default function App() {
         const userId = session.user.id;
         setUser(session.user);
         setLoading(false);
-        navigate('/dashboard', { replace: true });
+        // เด้งไป dashboard เฉพาะตอน login จริง ๆ (กดปุ่มเข้าสู่ระบบ) ไม่ใช่ตอน
+        // restore session ตอนแอปเพิ่งโหลด (SIGNED_IN ยิงตอน restore ด้วย) — ไม่งั้น
+        // จะเด้งทับ route ที่ผู้ใช้ตั้งใจเข้า เช่น /qr/:token ตอนสแกน QR
+        if (didInitialAuthCheck.current) {
+          navigate('/dashboard', { replace: true });
+        }
         setTimeout(() => { loadProfile(userId); }, 0);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
