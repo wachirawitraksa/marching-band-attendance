@@ -5,11 +5,19 @@ import { Profile, PracticeSession, AttendanceRecord, SESSION_TYPE_LABELS, Attend
 import { formatThaiDate } from '@/lib/utils';
 
 // ---- Register Thai font ----
+// (เคย register 'Pridi' ไว้ด้วย แต่พบบั๊ก glyph รวมสระ/วรรณยุกต์ผิดหลายจุด
+// เลยเปลี่ยนมาใช้ Sarabun เป็นฟอนต์หลักทั้งฉบับแทน — ดูรายละเอียดด้านล่าง)
+
+// Sarabun ใช้เป็นฟอนต์หลักของทั้งเอกสาร (เปลี่ยนจาก Pridi หลังพบว่า Pridi มีบั๊ก
+// glyph รวมสระ/วรรณยุกต์ผิดกับ fontkit หลายจุด เช่น "เช้า" เพี้ยนเป็น "เข้า"
+// และ "วิทย์" สระอิหลุดลอยออกจากคำ — เป็นปัญหาที่ตัวฟอนต์ ไม่ใช่โค้ด)
+// (ลิงก์ Google Fonts CSS ใน index.html ใช้กับ react-pdf ไม่ได้ ต้องเป็น URL
+// ไปที่ไฟล์ .ttf โดยตรงเท่านั้น)
  Font.register({
-  family: 'Pridi',
+  family: 'Sarabun',
   fonts: [
-    { src: '/fonts/Pridi-Regular.ttf', fontWeight: 'normal' },
-    { src: '/fonts/Pridi-Bold.ttf',    fontWeight: 'bold'   },
+    { src: '/fonts/Sarabun-Regular.ttf', fontWeight: 'normal' },
+    { src: '/fonts/Sarabun-Bold.ttf',    fontWeight: 'bold'   },
   ],
  });
 
@@ -29,9 +37,11 @@ function sanitizeThaiForPdf(text: string): string {
 // ---- Styles ----
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Pridi',
+    fontFamily: 'Sarabun',
     fontSize: 8,
-    padding: 24,
+    paddingTop: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 42,
     backgroundColor: '#ffffff',
   },
   header: {
@@ -42,7 +52,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    fontFamily: 'Pridi',
+    fontFamily: 'Sarabun',
     fontWeight: 'bold',
     color: '#1a1a1a',
     marginBottom: 2,
@@ -57,48 +67,50 @@ const styles = StyleSheet.create({
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: '#1a1a1a',
-    minHeight: 20,
+    minHeight: 24,
   },
   tableRow: {
     flexDirection: 'row',
     borderBottomWidth: 0.5,
     borderBottomColor: '#e5e7eb',
-    minHeight: 18,
+    minHeight: 20,
   },
   tableRowAlt: {
     flexDirection: 'row',
     borderBottomWidth: 0.5,
     borderBottomColor: '#e5e7eb',
     backgroundColor: '#f9fafb',
-    minHeight: 18,
+    minHeight: 20,
   },
   // Cells
   cellNo: { width: 22, paddingHorizontal: 3, paddingVertical: 3, justifyContent: 'center' },
   cellName: { flex: 1, paddingHorizontal: 4, paddingVertical: 3, justifyContent: 'center' },
-  cellSession: { width: 28, paddingHorizontal: 2, paddingVertical: 3, alignItems: 'center', justifyContent: 'center' },
+  cellSession: { width: 32, paddingHorizontal: 2, paddingVertical: 3, alignItems: 'center', justifyContent: 'center' },
   cellSummary: { width: 24, paddingHorizontal: 2, paddingVertical: 3, alignItems: 'center', justifyContent: 'center' },
+  // Page footer
+  pageNumber: { position: 'absolute', bottom: 14, right: 24, fontSize: 7, color: '#999999', fontFamily: 'Sarabun' },
   // Text
-  headerText: { color: '#ffffff', fontFamily: 'Pridi', fontSize: 7 },
+  headerText: { color: '#ffffff', fontFamily: 'Sarabun', fontSize: 7 },
   cellText: { fontSize: 7.5, color: '#1a1a1a' },
   cellTextCenter: { fontSize: 7.5, color: '#1a1a1a', textAlign: 'center' },
   // Status symbols (ขาวดำ-friendly)
-  symPresent: { fontSize: 8, fontFamily: 'Pridi', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
-  symLate:    { fontSize: 8, fontFamily: 'Pridi', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
-  symAbsent:  { fontSize: 8, fontFamily: 'Pridi', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
-  symExcused: { fontSize: 8, fontFamily: 'Pridi', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
-  symRd:      { fontSize: 6.5, fontFamily: 'Pridi', color: '#666666', textAlign: 'center' },
-  symEmpty:   { fontSize: 8, fontFamily: 'Pridi', color: '#999999', textAlign: 'center' },
+  symPresent: { fontSize: 8, fontFamily: 'Sarabun', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
+  symLate:    { fontSize: 8, fontFamily: 'Sarabun', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
+  symAbsent:  { fontSize: 8, fontFamily: 'Sarabun', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
+  symExcused: { fontSize: 8, fontFamily: 'Sarabun', fontWeight: 'bold', color: '#000000', textAlign: 'center' },
+  symRd:      { fontSize: 6.5, fontFamily: 'Sarabun', color: '#666666', textAlign: 'center' },
+  symEmpty:   { fontSize: 8, fontFamily: 'Sarabun', color: '#999999', textAlign: 'center' },
   // Legend
   legend: { flexDirection: 'row', gap: 12, marginTop: 8, flexWrap: 'wrap' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   legendDot: { width: 7, height: 7, borderRadius: 3.5 },
   legendText: { fontSize: 7, color: '#666' },
   // Summary header
-  summaryLabel: { fontSize: 7, color: '#d97706', fontFamily: 'Pridi', fontWeight: 'bold', textAlign: 'center' },
-  summaryPresent: { fontSize: 7, color: '#22c55e', fontFamily: 'Pridi', fontWeight: 'bold', textAlign: 'center' },
-  summaryLate:    { fontSize: 7, color: '#eab308', fontFamily: 'Pridi', fontWeight: 'bold', textAlign: 'center' },
-  summaryAbsent:  { fontSize: 7, color: '#ef4444', fontFamily: 'Pridi', fontWeight: 'bold', textAlign: 'center' },
-  summaryExcused: { fontSize: 7, color: '#3b82f6', fontFamily: 'Pridi', fontWeight: 'bold', textAlign: 'center' },
+  summaryLabel: { fontSize: 7, color: '#d97706', fontFamily: 'Sarabun', fontWeight: 'bold', textAlign: 'center' },
+  summaryPresent: { fontSize: 7, color: '#22c55e', fontFamily: 'Sarabun', fontWeight: 'bold', textAlign: 'center' },
+  summaryLate:    { fontSize: 7, color: '#eab308', fontFamily: 'Sarabun', fontWeight: 'bold', textAlign: 'center' },
+  summaryAbsent:  { fontSize: 7, color: '#ef4444', fontFamily: 'Sarabun', fontWeight: 'bold', textAlign: 'center' },
+  summaryExcused: { fontSize: 7, color: '#3b82f6', fontFamily: 'Sarabun', fontWeight: 'bold', textAlign: 'center' },
 });
 
 // ---- Types ----
@@ -139,39 +151,79 @@ function StudentName({ fullName, style }: { fullName: string; style?: any }) {
     <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
       {parts.map((part, i) => (
         <Text key={i} style={[style, i > 0 && { marginLeft: 3 }]} wrap={false}>
-          {part}
-          {/* ช่องว่างท้ายสุดกันปัญหา "ตัวสุดท้ายหาย" ตอน embed font บางกรณี */}
-          {i === parts.length - 1 ? ' ' : ''}
+          {sanitizeThaiForPdf(part)}
         </Text>
       ))}
     </View>
   );
 }
 
+// วันจันทร์ของสัปดาห์ที่ session นั้นอยู่ — ใช้เป็น key สำหรับจัดกลุ่ม
+function getWeekKey(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  const dow = d.getUTCDay(); // 0=อา..6=ส
+  const diffToMonday = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(d);
+  monday.setUTCDate(d.getUTCDate() + diffToMonday);
+  return monday.toISOString().slice(0, 10);
+}
+
+// จัดหน้า: 1 หน้า = 1 สัปดาห์ (อ่านง่ายกว่าตัดตายตัวทุก N คอลัมน์)
+// กันไว้เผื่อบางสัปดาห์มีคาบซ้อนผิดปกติ (ซ้อมเสริม/ข้อมูลซ้ำ) จนล้นความกว้างหน้ากระดาษ
+function groupSessionsIntoPages(sessions: ReportSession[]): ReportSession[][] {
+  const MAX_PER_PAGE = 12;
+  const weeks: ReportSession[][] = [];
+  let currentWeekKey: string | null = null;
+  let current: ReportSession[] = [];
+  for (const rs of sessions) {
+    const wk = getWeekKey(rs.session.date);
+    if (wk !== currentWeekKey) {
+      if (current.length) weeks.push(current);
+      current = [];
+      currentWeekKey = wk;
+    }
+    current.push(rs);
+  }
+  if (current.length) weeks.push(current);
+
+  const pages: ReportSession[][] = [];
+  weeks.forEach(week => {
+    for (let i = 0; i < week.length; i += MAX_PER_PAGE) {
+      pages.push(week.slice(i, i + MAX_PER_PAGE));
+    }
+  });
+  return pages.length ? pages : [[]];
+}
+
 // ---- PDF Document ----
 function AttendanceDocument({ title, dateRange, sessions, rows }: PDFProps) {
-  // แบ่ง sessions เป็น chunks ถ้ามีเยอะ (landscape จุได้ประมาณ 20 sessions)
-  const SESSIONS_PER_PAGE = 18;
-  const chunks: ReportSession[][] = [];
-  for (let i = 0; i < sessions.length; i += SESSIONS_PER_PAGE) {
-    chunks.push(sessions.slice(i, i + SESSIONS_PER_PAGE));
-  }
-  if (chunks.length === 0) chunks.push([]);
+  const chunks = groupSessionsIntoPages(sessions);
 
   return (
     <Document title={title}>
-      {chunks.map((chunkSessions, chunkIdx) => (
-        <Page key={chunkIdx} size="A4" orientation="landscape" style={styles.page}>
+      {chunks.map((chunkSessions, chunkIdx) => {
+        const weekStart = chunkSessions[0]?.session.date;
+        const weekEnd = chunkSessions[chunkSessions.length - 1]?.session.date;
+        const weekLabel = weekStart
+          ? (weekStart === weekEnd ? formatThaiDate(weekStart) : `${formatThaiDate(weekStart)} – ${formatThaiDate(weekEnd)}`)
+          : '';
+        return (
+        <Page key={chunkIdx} size="A4" orientation="portrait" style={styles.page}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>วงโยธวาทิต — รายงานการเข้าซ้อม</Text>
-            <Text style={styles.subtitle}>{dateRange}{chunkIdx > 0 ? ` (ต่อ ${chunkIdx + 1})` : ''}</Text>
+            <Text style={styles.subtitle}>{dateRange}</Text>
+            {weekLabel !== '' && (
+              <Text style={[styles.subtitle, { color: '#d97706', marginTop: 1 }]}>
+                สัปดาห์ {weekLabel} · หน้า {chunkIdx + 1} จาก {chunks.length}
+              </Text>
+            )}
           </View>
 
           {/* Table */}
           <View style={styles.table}>
             {/* Table header row */}
-            <View style={styles.tableHeader}>
+            <View style={styles.tableHeader} wrap={false}>
               <View style={styles.cellNo}>
                 <Text style={styles.headerText}>#</Text>
               </View>
@@ -181,8 +233,8 @@ function AttendanceDocument({ title, dateRange, sessions, rows }: PDFProps) {
               {/* Session columns */}
               {chunkSessions.map(({ session, dayLabel }) => (
                 <View key={session.id} style={styles.cellSession}>
-                  <Text style={[styles.headerText, { fontSize: 6, textAlign: 'center' }]}>
-                    {dayLabel}
+                  <Text style={[styles.headerText, { fontFamily: 'Sarabun', fontSize: 5.5, textAlign: 'center', lineHeight: 1.35 }]}>
+                    {sanitizeThaiForPdf(dayLabel)}
                   </Text>
                 </View>
               ))}
@@ -201,7 +253,7 @@ function AttendanceDocument({ title, dateRange, sessions, rows }: PDFProps) {
               const excused = Object.values(row.statusMap).filter(s => s === 'excused').length;
 
               return (
-                <View key={row.student.id} style={idx % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
+                <View key={row.student.id} wrap={false} style={idx % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
                   <View style={styles.cellNo}>
                     <Text style={styles.cellTextCenter}>{idx + 1}</Text>
                   </View>
@@ -251,8 +303,16 @@ function AttendanceDocument({ title, dateRange, sessions, rows }: PDFProps) {
               </View>
             ))}
           </View>
+
+          {/* Page number */}
+          <Text
+            style={styles.pageNumber}
+            render={({ pageNumber, totalPages }) => `หน้า ${pageNumber} / ${totalPages}`}
+            fixed
+          />
         </Page>
-      ))}
+        );
+      })}
     </Document>
   );
 }

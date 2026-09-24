@@ -106,12 +106,27 @@ export function ExportReportDialog({ students }: Props) {
       }
 
       // 2. ดึง attendance records ทั้งหมดของ sessions เหล่านี้
-      const { data: recordsRaw } = await supabase
-        .from('attendance_records')
-        .select('session_id, student_id, status')
-        .in('session_id', sessions.map(s => s.id));
+      // ⚠️ Supabase/PostgREST คืนได้สูงสุด 1,000 แถวต่อ query โดย default (ไม่ error แค่ตัดข้อมูลเงียบๆ)
+      // นักเรียน 58 คน × จำนวนคาบที่เพิ่มขึ้นเรื่อยๆ ทำให้เกิน 1,000 แถวได้ง่าย ต้อง paginate ดึงทีละหน้า
+      const records: Pick<AttendanceRecord, 'session_id' | 'student_id' | 'status'>[] = [];
+      {
+        const PAGE_SIZE = 1000;
+        let from = 0;
+        while (true) {
+          const { data: page, error: pageErr } = await supabase
+            .from('attendance_records')
+            .select('session_id, student_id, status')
+            .in('session_id', sessions.map(s => s.id))
+            .range(from, from + PAGE_SIZE - 1);
 
-      const records: Pick<AttendanceRecord, 'session_id' | 'student_id' | 'status'>[] = recordsRaw || [];
+          if (pageErr) throw pageErr;
+          if (!page || page.length === 0) break;
+
+          records.push(...page);
+          if (page.length < PAGE_SIZE) break; // หน้าสุดท้ายแล้ว
+          from += PAGE_SIZE;
+        }
+      }
 
       // 3. สร้าง lookup map: `${student_id}__${session_id}` → status
       const lookup: Record<string, AttendanceStatus> = {};
@@ -120,13 +135,19 @@ export function ExportReportDialog({ students }: Props) {
       });
 
       // 4. สร้าง ReportSession labels
+      // หมายเหตุ: วันพฤหัสมีทั้งคาบเช้าและคาบชุมนุม ใช้ session_type แยกป้ายกำกับ
+      // เพื่อไม่ให้ดูสับสนว่าคอลัมน์ไหนคือคาบไหน
+      // ⚠️ ปรับเงื่อนไข s.session_type === 'club' ตรงนี้ให้ตรงกับค่า enum จริงใน types.ts
       const reportSessions: ReportSession[] = sessions.map(s => {
         const d = new Date(s.date + 'T12:00:00Z');
-        const dow = DAY_TH[d.getUTCDay()];
+        const dowIndex = d.getUTCDay();
         const dateStr = `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}`;
+        const dayName = dowIndex === 4
+          ? `พฤ(${s.session_type === 'club' ? 'ชุมนุม' : 'เช้า'})`
+          : DAY_TH[dowIndex];
         return {
           session: s,
-          dayLabel: `${dow}\n${dateStr}`,
+          dayLabel: `${dayName}\n${dateStr}`,
         };
       });
 
