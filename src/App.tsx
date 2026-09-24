@@ -76,6 +76,10 @@ export default function App() {
       }
     }
 
+    // ใช้แยกว่าตอนนี้เป็นการ "restore session ตอนแอปเพิ่งโหลด" หรือ "login จริง ๆ"
+    // (SIGNED_IN ยิงทั้งสองกรณี) — ก่อนเช็คเสร็จรอบแรกถือว่ายังเป็นการ restore เสมอ
+    const didInitialAuthCheck = { current: false };
+
     // โหลดโปรไฟล์ — เรียกได้นอก callback ของ onAuthStateChange เท่านั้น
     const loadProfile = async (userId: string) => {
       try {
@@ -120,6 +124,7 @@ export default function App() {
         console.error('Supabase session check failed after retry:', error);
       } finally {
         setLoading(false);
+        didInitialAuthCheck.current = true;
       }
     };
 
@@ -134,7 +139,12 @@ export default function App() {
         const userId = session.user.id;
         setUser(session.user);
         setLoading(false);
-        navigate('/dashboard', { replace: true });
+        // เด้งไป dashboard เฉพาะตอน login จริง ๆ (กดปุ่มเข้าสู่ระบบ) ไม่ใช่ตอน
+        // restore session ตอนแอปเพิ่งโหลด (SIGNED_IN ยิงตอน restore ด้วย) — ไม่งั้น
+        // จะเด้งทับ route ที่ผู้ใช้ตั้งใจเข้า เช่น /qr/:token ตอนสแกน QR
+        if (didInitialAuthCheck.current) {
+          navigate('/dashboard', { replace: true });
+        }
         setTimeout(() => { loadProfile(userId); }, 0);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
