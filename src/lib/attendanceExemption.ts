@@ -68,3 +68,15 @@ export function getPdfCellStatus(
   if (shouldExcludeFromStats(session, student)) return 'rd_exempt';
   return rawStatus;
 }
+
+// แยกนักเรียนของรอบนี้: คนที่ต้องมาซ้อม (ใช้เป็นตัวหาร) กับคนที่ไป ร.ด. (ไม่นับในรอบนี้)
+export function splitRdExempt<T extends Pick<Profile, 'is_in_club'>>(
+  session: Pick<PracticeSession, 'date' | 'session_type' | 'start_time'>,
+  students: T[]
+): { expected: T[]; exempt: T[] } {
+  if (!isThursdayAfternoonSession(session)) return { expected: students, exempt: [] };
+  const expected: T[] = [];
+  const exempt: T[] = [];
+  students.forEach((s) => (isRdInsteadOfClub(s) ? exempt : expected).push(s));
+  return { expected, exempt };
+}

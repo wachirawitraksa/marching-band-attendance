@@ -1,4 +1,5 @@
 import { getErrorMessage } from '@/lib/utils';
+import { splitRdExempt } from '@/lib/attendanceExemption';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -25,7 +26,7 @@ import {
 } from 'recharts';
 import {
   useSessionsByDate, useMyAttendance, useMyAttendanceStats,
-  useActiveStudentCount, useWeeklyAttendance, useTodayAttendanceSummary,
+  useStudents, useWeeklyAttendance, useTodayAttendanceSummary,
   useStudentStreak, useStudentBadges,
 } from '@/hooks/useSupabaseQueries';
 
@@ -44,7 +45,8 @@ export default function DashboardPage() {
   const { data: streak } = useStudentStreak(!isTeacher ? profile?.id : undefined);
   const { data: badges = [] } = useStudentBadges(!isTeacher ? profile?.id : undefined);
 
-  const { data: totalStudents = 0 } = useActiveStudentCount();
+  // รายชื่อ (cache เดียวกับหน้าเช็คชื่อ) — ใช้หาตัวหารต่อรอบ: คาบบ่ายวันพฤหัสไม่นับคนที่ไป ร.ด.
+  const { data: activeStudents = [] } = useStudents({ graduated: false, activeOnly: true });
   const todaySessionIds = todaySessions.map((s) => s.id);
   const { data: teacherTodayStats } = useTodayAttendanceSummary(isTeacher ? todaySessionIds : []);
 
@@ -208,6 +210,8 @@ export default function DashboardPage() {
                 const windowState = getAttendanceWindowState(session.session_type, session.start_time, session.end_time, now);
                 const c = teacherTodayStats?.bySession[session.id] ?? { total: 0, present: 0, absent: 0, late: 0, excused: 0 };
                 const here = c.present + c.late;
+                const { expected, exempt } = splitRdExempt(session, activeStudents);
+                const totalStudents = expected.length;
                 const notChecked = Math.max(0, totalStudents - c.total);
                 const pct = totalStudents > 0 ? Math.round((here / totalStudents) * 100) : 0;
                 return (
@@ -254,6 +258,7 @@ export default function DashboardPage() {
                               : <span className="text-danger">ขาด {c.absent + notChecked}</span>}
                             {' · '}
                             <span className="text-info">ลา {c.excused}</span>
+                            {exempt.length > 0 && <span className="text-muted-foreground"> · ไป ร.ด. {exempt.length} (ไม่นับ)</span>}
                           </p>
                         </>
                       )}

@@ -6,6 +6,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Maximize2, Minimize2, X, Clock } from 'lucide-react';
 import { useAllAttendance } from '@/hooks/useAttendance';
 import { useStudents } from '@/hooks/useSupabaseQueries';
+import { splitRdExempt } from '@/lib/attendanceExemption';
 import { formatTime, type AttendanceWindowState } from '@/lib/utils';
 import { PracticeSession, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 
@@ -34,9 +35,11 @@ export function QRPresenter({ session, windowState, onClose }: Props) {
 function PresenterBody({ session, windowState, onClose }: { session: PracticeSession; windowState: AttendanceWindowState; onClose: () => void }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { records } = useAllAttendance(session.id);
-  const { data: students = [] } = useStudents({ graduated: false, activeOnly: true });
-
-  const here = records.filter(r => r.status === 'present' || r.status === 'late').length;
+  const { data: activeStudents = [] } = useStudents({ graduated: false, activeOnly: true });
+  // คาบบ่ายวันพฤหัสไม่นับคนที่ไป ร.ด.
+  const students = splitRdExempt(session, activeStudents).expected;
+  const expectedIds = new Set(students.map(s => s.id));
+  const here = records.filter(r => expectedIds.has(r.student_id) && (r.status === 'present' || r.status === 'late')).length;
   const recent = records
     .filter(r => r.check_in_time && (r.status === 'present' || r.status === 'late'))
     .sort((a, b) => (b.check_in_time ?? '').localeCompare(a.check_in_time ?? ''))

@@ -28,7 +28,8 @@ import { ToastAction } from '@/components/ui/toast';
 import {
   formatThaiDate, formatTime, getDayOfWeekThai, getAttendanceWindowState, getAttendanceOpenTime, getCheckInStatus, getAvatarFallback, getTodayBangkok
 } from '@/lib/utils';
-import { AttendanceRecord, AttendanceStatus, LeaveRequest, Profile, SessionType, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
+import { splitRdExempt } from '@/lib/attendanceExemption';
+import { AttendanceRecord, AttendanceStatus, LeaveRequest, PracticeSession, Profile, SessionType, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { QRPresenter } from '@/components/attendance/QRPresenter';
 import { CheckInSuccessAnimation } from '@/components/CheckInSuccessAnimation';
@@ -380,7 +381,7 @@ export default function AttendancePage() {
               {/* Teacher view */}
               {isTeacher && (
                 <TeacherAttendanceView
-                  sessionId={session.id}
+                  session={session}
                   defaultExpanded={isOpen || sessions.length === 1 || focusSessionId === session.id}
                   onOverride={(studentId, studentName, current, leave) => openOverride(session.id, studentId, studentName, current, leave)}
                 />
@@ -506,7 +507,8 @@ function rosterGroup(status: AttendanceStatus | null, pendingLeave: boolean): Ex
 
 // รายชื่อไม่อยู่ในกล่อง scroll ซ้อน (เลื่อนยากบนมือถือ) — แสดงต่อกับหน้าเลย แล้วพับ/กางได้ต่อรอบ
 // กางไว้ก่อนเฉพาะรอบที่กำลังเปิดเช็คชื่อ (หรือวันที่มีรอบเดียว)
-function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { sessionId: string; onOverride: (id: string, name: string, current: AttendanceRecord | null, leave: LeaveRequest | null) => void; defaultExpanded: boolean }) {
+function TeacherAttendanceView({ session, onOverride, defaultExpanded }: { session: PracticeSession; onOverride: (id: string, name: string, current: AttendanceRecord | null, leave: LeaveRequest | null) => void; defaultExpanded: boolean }) {
+  const sessionId = session.id;
   const { data: leaves = [] } = useSessionLeaveRequests(sessionId);
   const pendingLeaves = leaves.filter(l => l.status === 'pending');
   // มีคำขอลารออนุมัติ → กางรายชื่อให้เห็นเลย
@@ -515,10 +517,13 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
   const listId = `attendance-list-${sessionId}`;
   const { records, loading: recordsLoading } = useAllAttendance(sessionId);
   // ใช้ cache เดียวกับ StudentsPage/ReportsPage — สลับหน้าไปมาไม่ fetch ซ้ำ
-  const { data: allStudents = [], isLoading: studentsLoading } = useStudents({ graduated: false, activeOnly: true });
+  const { data: activeStudents = [], isLoading: studentsLoading } = useStudents({ graduated: false, activeOnly: true });
   const loading = recordsLoading || studentsLoading;
 
-  const present = records.filter(r => r.status === 'present' || r.status === 'late').length;
+  // คาบบ่ายวันพฤหัส: คนที่ไม่อยู่ชุมนุมไปเรียน ร.ด. — ไม่อยู่ในรายชื่อและไม่นับเป็นตัวหาร
+  const { expected: allStudents, exempt: rdExempt } = useMemo(() => splitRdExempt(session, activeStudents), [session, activeStudents]);
+  const expectedIds = useMemo(() => new Set(allStudents.map(s => s.id)), [allStudents]);
+  const present = records.filter(r => expectedIds.has(r.student_id) && (r.status === 'present' || r.status === 'late')).length;
   const total = allStudents.length;
 
   const [filter, setFilter] = useState<RosterFilter>('all');
@@ -580,6 +585,7 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
         <span className="text-muted-foreground">
           มาแล้ว <span className="font-semibold text-brand-text tabular-nums">{present} / {total} คน</span>
           {pendingLeaves.length > 0 && <span className="ml-2 font-medium text-warning">· ขอลา {pendingLeaves.length}</span>}
+          {rdExempt.length > 0 && <span className="ml-2">· ไป ร.ด. {rdExempt.length} (ไม่นับ)</span>}
         </span>
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           {expanded ? 'ซ่อนรายชื่อ' : 'ดูรายชื่อ'}
