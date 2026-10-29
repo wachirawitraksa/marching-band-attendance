@@ -123,37 +123,6 @@ export function useAttendance(date?: string) {
     return data;
   }, [profile, fetchMyRecords]);
 
-  const submitReason = useCallback(async (sessionId: string, reason: string) => {
-    if (!profile) throw new Error('Not authenticated');
-
-    const { data: existing } = await supabase
-      .from('attendance_records')
-      .select('id')
-      .eq('session_id', sessionId)
-      .eq('student_id', profile.id)
-      .single();
-
-    if (existing) {
-      const { error } = await supabase
-        .from('attendance_records')
-        .update({ reason, status: 'excused' })
-        .eq('id', existing.id);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase
-        .from('attendance_records')
-        .insert({
-          session_id: sessionId,
-          student_id: profile.id,
-          status: 'excused',
-          reason,
-        });
-      if (error) throw error;
-    }
-
-    await fetchMyRecords();
-  }, [profile, fetchMyRecords]);
-
   const qrCheckIn = useCallback(async (sessionId: string, qrToken: string) => {
     if (!profile) throw new Error('Not authenticated');
 
@@ -225,7 +194,6 @@ export function useAttendance(date?: string) {
     loading,
     error,
     checkIn,
-    submitReason,
     qrCheckIn,
     refetch: () => Promise.all([fetchSessions(), fetchMyRecords()]),
   };

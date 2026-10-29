@@ -16,6 +16,10 @@ import { useGPS } from '@/hooks/useGPS';
 import { useAllAttendance } from '@/hooks/useAttendance';
 import { useStudents } from '@/hooks/useSupabaseQueries';
 import { useNow } from '@/hooks/useNow';
+import {
+  useMyLeaveRequests, useSessionLeaveRequests, submitLeaveRequest, cancelLeaveRequest, decideLeaveRequest,
+} from '@/hooks/useLeaveRequests';
+import { Label } from '@/components/ui/label';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
@@ -23,7 +27,7 @@ import { ToastAction } from '@/components/ui/toast';
 import {
   formatThaiDate, formatTime, getDayOfWeekThai, getAttendanceWindowState, getAvatarFallback, getTodayBangkok
 } from '@/lib/utils';
-import { AttendanceRecord, AttendanceStatus, Profile, SessionType, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
+import { AttendanceRecord, AttendanceStatus, LeaveRequest, Profile, SessionType, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { QRCodeSVG } from 'qrcode.react';
 import { CheckInSuccessAnimation } from '@/components/CheckInSuccessAnimation';
@@ -32,14 +36,13 @@ export default function AttendancePage() {
   const { profile } = useAuthStore();
   const queryClient = useQueryClient();
   const today = getTodayBangkok();
-  const { sessions, myRecords, loading, checkIn, submitReason, refetch } = useAttendance(today);
+  const { sessions, myRecords, loading, checkIn, refetch } = useAttendance(today);
   const { lat, lng, distance, inRange, loading: gpsLoading, error: gpsError, schoolLocation, getCurrentPosition } = useGPS();
+  const isStudentView = profile?.role === 'student';
+  const { data: myLeaves = [] } = useMyLeaveRequests(isStudentView ? profile?.id : undefined, sessions.map(s => s.id));
 
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [reasonDialog, setReasonDialog] = useState<{ open: boolean; sessionId: string; sessionName: string }>({ open: false, sessionId: '', sessionName: '' });
-  const [reason, setReason] = useState('');
-  const [submittingReason, setSubmittingReason] = useState(false);
   const [qrDialog, setQrDialog] = useState<{ open: boolean; sessionId: string; token: string }>({ open: false, sessionId: '', token: '' });
 
   const isTeacher = profile?.role === 'admin' || profile?.role === 'teacher';
@@ -54,15 +57,36 @@ export default function AttendancePage() {
 
   // Teacher override
   // current = record ตอนเปิด dialog (null = ยังไม่เช็ค) — ใช้ตั้งค่าเริ่มต้น, แสดงสถานะเดิม และย้อนกลับ
-  const [overrideDialog, setOverrideDialog] = useState<{ open: boolean; studentId: string; sessionId: string; studentName: string; current: AttendanceRecord | null } | null>(null);
+  const [overrideDialog, setOverrideDialog] = useState<{ open: boolean; studentId: string; sessionId: string; studentName: string; current: AttendanceRecord | null; leave: LeaveRequest | null } | null>(null);
   const [overrideStatus, setOverrideStatus] = useState<AttendanceStatus | null>(null);
-  const openOverride = (sessionId: string, studentId: string, studentName: string, current: AttendanceRecord | null) => {
-    setOverrideDialog({ open: true, studentId, sessionId, studentName, current });
+  const openOverride = (sessionId: string, studentId: string, studentName: string, current: AttendanceRecord | null, leave: LeaveRequest | null) => {
+    setOverrideDialog({ open: true, studentId, sessionId, studentName, current, leave });
     setOverrideStatus(current?.status ?? null);
     setOverrideNote(current?.override_note ?? '');
   };
   const [overrideNote, setOverrideNote] = useState('');
   const [savingOverride, setSavingOverride] = useState(false);
+  const [decidingLeave, setDecidingLeave] = useState(false);
+
+  // ครูอนุมัติ = บันทึกเป็น "ลา" พร้อมเหตุผล / ไม่อนุมัติ = ปิดคำขอ สถานะเช็คชื่อคงเดิม
+  const handleDecideLeave = async (approve: boolean) => {
+    if (!overrideDialog?.leave || !profile) return;
+    setDecidingLeave(true);
+    try {
+      await decideLeaveRequest(overrideDialog.leave, approve, profile.id);
+      toast({
+        variant: approve ? 'success' : 'default',
+        title: approve ? `อนุมัติลา: ${overrideDialog.studentName}` : `ไม่อนุมัติคำขอลาของ ${overrideDialog.studentName}`,
+      });
+      setOverrideDialog(null);
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['leave'] });
+    } catch (err) {
+      toast({ variant: 'destructive', title: approve ? 'อนุมัติลาไม่สำเร็จ' : 'บันทึกไม่สำเร็จ', description: getErrorMessage(err) });
+    } finally {
+      setDecidingLeave(false);
+    }
+  };
 
   const handleCheckIn = async (sessionId: string) => {
     if (!profile) return;
@@ -111,21 +135,6 @@ export default function AttendancePage() {
       });
     } finally {
       setCheckingIn(null);
-    }
-  };
-
-  const handleSubmitReason = async () => {
-    if (!reason.trim()) { toast({ variant: 'destructive', title: 'กรุณากรอกเหตุผล' }); return; }
-    setSubmittingReason(true);
-    try {
-      await submitReason(reasonDialog.sessionId, reason.trim());
-      setReasonDialog({ open: false, sessionId: '', sessionName: '' });
-      setReason('');
-      toast({ variant: 'success', title: 'บันทึกเหตุผลแล้ว' });
-    } catch (err) {
-      toast({ variant: 'destructive', title: 'บันทึกเหตุผลไม่สำเร็จ', description: getErrorMessage(err) });
-    } finally {
-      setSubmittingReason(false);
     }
   };
 
@@ -205,10 +214,16 @@ export default function AttendancePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">เช็คชื่อ</h1>
-          <h3>หากลา ให้แจ้งครู</h3>
           <p className="text-sm text-muted-foreground">
             วัน{getDayOfWeekThai(now)}ที่ {formatThaiDate(now)}
           </p>
+          {/* นโยบายการลา: นักเรียนแจ้งครูเอง ครูเป็นคนบันทึก "ลา" ในระบบ (ไม่มีปุ่มให้นักเรียนตั้งสถานะตัวเอง) */}
+          {!isTeacher && (
+            <p className="text-sm text-muted-foreground mt-1 flex items-start gap-1.5">
+              <Info size={14} className="mt-1 shrink-0" />
+              <span>ถ้าจะลาหรือมาซ้อมไม่ได้ กด "ขอลา" ในรอบนั้นแล้วพิมพ์เหตุผล จากนั้นแจ้งครูผู้ดูแลให้กดอนุมัติในระบบ</span>
+            </p>
+          )}
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5">
           <RefreshCw size={14} />
@@ -326,15 +341,16 @@ export default function AttendancePage() {
                           <><MapPin size={16} /> เช็คชื่อ (GPS)</>
                         )}
                       </Button>
-                      {!isOpen && isTeacher && (
-                        <Button
-                          variant="outline" className="flex-1 gap-2"
-                          onClick={() => setReasonDialog({ open: true, sessionId: session.id, sessionName: SESSION_TYPE_LABELS[session.session_type] })}
-                        >
-                          <FileText size={16} /> แจ้งเหตุผลไม่มา
-                        </Button>
-                      )}
                     </div>
+                  )}
+
+                  {(!myRecord || myRecord.status === 'absent') && profile && (
+                    <StudentLeavePanel
+                      sessionId={session.id}
+                      sessionName={SESSION_TYPE_LABELS[session.session_type]}
+                      studentId={profile.id}
+                      request={myLeaves.find(l => l.session_id === session.id) ?? null}
+                    />
                   )}
 
                   {!isOpen && !myRecord && (
@@ -353,39 +369,13 @@ export default function AttendancePage() {
                 <TeacherAttendanceView
                   sessionId={session.id}
                   defaultExpanded={isOpen || sessions.length === 1}
-                  onOverride={(studentId, studentName, current) => openOverride(session.id, studentId, studentName, current)}
+                  onOverride={(studentId, studentName, current, leave) => openOverride(session.id, studentId, studentName, current, leave)}
                 />
               )}
             </CardContent>
           </Card>
         );
       })}
-
-      {/* Reason dialog */}
-      <Dialog open={reasonDialog.open} onOpenChange={(o) => !o && setReasonDialog({ open: false, sessionId: '', sessionName: '' })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>แจ้งเหตุผลไม่เข้าร่วม</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <p className="text-sm text-muted-foreground">รอบ: {reasonDialog.sessionName}</p>
-            <Textarea
-              placeholder="กรอกเหตุผลที่ไม่สามารถเข้าร่วมได้..."
-              value={reason}
-              onChange={e => setReason(e.target.value)}
-              rows={4}
-              className="resize-none"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReasonDialog({ open: false, sessionId: '', sessionName: '' })}>ยกเลิก</Button>
-            <Button onClick={handleSubmitReason} disabled={submittingReason} className="bg-brand-500 hover:bg-brand-400 text-white">
-              {submittingReason ? <Loader2 size={16} className="animate-spin mr-2" /> : null}
-              บันทึก
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* QR Dialog (teacher) */}
       <Dialog open={qrDialog.open} onOpenChange={(o) => !o && setQrDialog({ open: false, sessionId: '', token: '' })}>
@@ -426,6 +416,21 @@ export default function AttendancePage() {
                   )}
                 </p>
               </div>
+              {overrideDialog.leave?.status === 'pending' && (
+                <div className="space-y-2 rounded-lg border border-warning/40 bg-warning/5 p-3">
+                  <p className="text-sm font-medium">นักเรียนขอลา</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">เหตุผล: {overrideDialog.leave.reason}</p>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="flex-1 bg-brand-500 hover:bg-brand-400 text-white" disabled={decidingLeave} onClick={() => handleDecideLeave(true)}>
+                      {decidingLeave ? <Loader2 size={14} className="animate-spin" /> : null}
+                      อนุมัติลา
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-1" disabled={decidingLeave} onClick={() => handleDecideLeave(false)}>
+                      ไม่อนุมัติ
+                    </Button>
+                  </div>
+                </div>
+              )}
               <div role="radiogroup" aria-label="สถานะใหม่" className="grid grid-cols-2 gap-2">
                 {(['present', 'absent', 'late', 'excused'] as const).map(s => (
                   <Button
@@ -475,8 +480,12 @@ export default function AttendancePage() {
 
 // รายชื่อไม่อยู่ในกล่อง scroll ซ้อน (เลื่อนยากบนมือถือ) — แสดงต่อกับหน้าเลย แล้วพับ/กางได้ต่อรอบ
 // กางไว้ก่อนเฉพาะรอบที่กำลังเปิดเช็คชื่อ (หรือวันที่มีรอบเดียว)
-function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { sessionId: string; onOverride: (id: string, name: string, current: AttendanceRecord | null) => void; defaultExpanded: boolean }) {
+function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { sessionId: string; onOverride: (id: string, name: string, current: AttendanceRecord | null, leave: LeaveRequest | null) => void; defaultExpanded: boolean }) {
+  const { data: leaves = [] } = useSessionLeaveRequests(sessionId);
+  const pendingLeaves = leaves.filter(l => l.status === 'pending');
+  // มีคำขอลารออนุมัติ → กางรายชื่อให้เห็นเลย
   const [expanded, setExpanded] = useState(defaultExpanded);
+  useEffect(() => { if (pendingLeaves.length > 0) setExpanded(true); }, [pendingLeaves.length]);
   const listId = `attendance-list-${sessionId}`;
   const { records, loading: recordsLoading } = useAllAttendance(sessionId);
   // ใช้ cache เดียวกับ StudentsPage/ReportsPage — สลับหน้าไปมาไม่ fetch ซ้ำ
@@ -497,7 +506,10 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
         aria-controls={listId}
         className="flex w-full items-center justify-between gap-3 min-h-11 -mx-2 px-2 rounded-lg text-sm hover:bg-muted/50 transition-colors"
       >
-        <span className="text-muted-foreground">มาแล้ว <span className="font-semibold text-brand-text tabular-nums">{present} / {total} คน</span></span>
+        <span className="text-muted-foreground">
+          มาแล้ว <span className="font-semibold text-brand-text tabular-nums">{present} / {total} คน</span>
+          {pendingLeaves.length > 0 && <span className="ml-2 font-medium text-warning">· ขอลา {pendingLeaves.length}</span>}
+        </span>
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           {expanded ? 'ซ่อนรายชื่อ' : 'ดูรายชื่อ'}
           <ChevronDown size={14} className={expanded ? 'rotate-180 transition-transform' : 'transition-transform'} />
@@ -507,6 +519,7 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
       {expanded && <div id={listId} className="space-y-1.5">
         {allStudents.map(student => {
           const record = records.find(r => r.student_id === student.id);
+          const leave = leaves.find(l => l.student_id === student.id) ?? null;
           return (
             <div key={student.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/50">
               <div className="flex items-center gap-2.5">
@@ -528,10 +541,13 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
                 >
                   {!record ? 'ยังไม่เช็ค' : ATTENDANCE_STATUS_LABELS[record.status]}
                 </Badge>
+                {leave?.status === 'pending' && (
+                  <Badge variant="outline" className="text-xs border-warning/50 text-warning">ขอลา</Badge>
+                )}
                 <Button
                   size="icon-sm" variant="ghost"
                   aria-label={`แก้ไขสถานะของ ${student.full_name}`}
-                  onClick={() => onOverride(student.id, student.full_name, record ?? null)}
+                  onClick={() => onOverride(student.id, student.full_name, record ?? null, leave)}
                 >
                   <UserCheck size={13} />
                 </Button>
@@ -541,5 +557,100 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
         })}
       </div>}
     </div>
+  );
+}
+
+// คำขอลาฝั่งนักเรียน: พิมพ์เหตุผล → รอครูอนุมัติ (นักเรียนเปลี่ยนสถานะเช็คชื่อเองไม่ได้)
+function StudentLeavePanel({ sessionId, sessionName, studentId, request }: {
+  sessionId: string; sessionName: string; studentId: string; request: LeaveRequest | null;
+}) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  const fieldId = `leave-reason-${sessionId}`;
+
+  const openDialog = () => { setReason(request?.reason ?? ''); setOpen(true); };
+
+  const handleSubmit = async () => {
+    const text = reason.trim();
+    if (!text) return;
+    setSaving(true);
+    try {
+      await submitLeaveRequest(sessionId, studentId, text);
+      toast({ variant: 'success', title: 'ส่งคำขอลาแล้ว', description: 'แจ้งครูผู้ดูแลให้กดอนุมัติในระบบด้วย' });
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['leave'] });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'ส่งคำขอลาไม่สำเร็จ', description: getErrorMessage(err) });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!request) return;
+    setSaving(true);
+    try {
+      await cancelLeaveRequest(request.id);
+      toast({ title: 'ยกเลิกคำขอลาแล้ว' });
+      queryClient.invalidateQueries({ queryKey: ['leave'] });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'ยกเลิกคำขอลาไม่สำเร็จ', description: getErrorMessage(err) });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      {request?.status === 'pending' ? (
+        <div className="rounded-lg border border-warning/40 bg-warning/5 p-3 space-y-2">
+          <p className="text-sm font-medium flex items-center gap-1.5"><FileText size={15} className="text-warning" /> ส่งคำขอลาแล้ว · รอครูอนุมัติ</p>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">เหตุผล: {request.reason}</p>
+          <p className="text-xs text-muted-foreground">แจ้งครูผู้ดูแลให้กดอนุมัติในระบบ สถานะจะเปลี่ยนเป็น "ลา" เมื่อครูอนุมัติ</p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="flex-1" onClick={openDialog} disabled={saving}>แก้ไขเหตุผล</Button>
+            <Button size="sm" variant="ghost" className="flex-1 text-danger hover:text-danger" onClick={handleCancel} disabled={saving}>ยกเลิกคำขอ</Button>
+          </div>
+        </div>
+      ) : request?.status === 'rejected' ? (
+        <p className="text-xs text-danger flex items-center gap-1"><XCircle size={12} /> ครูไม่อนุมัติคำขอลารอบนี้</p>
+      ) : request?.status === 'approved' ? null : (
+        <Button variant="outline" className="w-full gap-2" onClick={openDialog}>
+          <FileText size={16} /> ขอลา
+        </Button>
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>ขอลา · {sessionName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor={fieldId}>เหตุผล</Label>
+            <Textarea
+              id={fieldId}
+              placeholder="เช่น ป่วย, ไปธุระกับผู้ปกครอง"
+              value={reason}
+              onChange={e => setReason(e.target.value.slice(0, 500))}
+              rows={4}
+              className="resize-none"
+              aria-describedby={`${fieldId}-hint`}
+            />
+            <p id={`${fieldId}-hint`} className="text-xs text-muted-foreground">
+              ส่งแล้วไปแจ้งครูผู้ดูแลให้กดอนุมัติในระบบ สถานะจะเปลี่ยนเป็น "ลา" เมื่อครูอนุมัติ
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>ยกเลิก</Button>
+            <Button onClick={handleSubmit} disabled={saving || !reason.trim()} className="bg-brand-500 hover:bg-brand-400 text-white">
+              {saving ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
+              ส่งคำขอลา
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
