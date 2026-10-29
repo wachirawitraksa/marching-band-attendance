@@ -398,7 +398,7 @@ export default function SchedulePage() {
                             isTomorrow ? 'bg-brand-500/20 text-brand-text' :
                             'bg-muted'
                           }`}>
-                            <span className="text-xs leading-none">{getDayOfWeekThai(dateObj)}</span>
+                            <span className="text-xs">{getDayOfWeekThai(dateObj)}</span>
                             <span className="text-base font-bold leading-tight">{dateObj.getUTCDate()}</span>
                           </div>
                           <div>

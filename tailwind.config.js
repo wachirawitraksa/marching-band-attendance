@@ -106,8 +106,17 @@ export default {
         float: "float 3s ease-in-out infinite",
       },
       fontFamily: {
-        sans: ["Noto Sans Thai", "Noto Sans", "sans-serif"],
-        display: ["Sarabun", "sans-serif"],
+        // ฟอนต์ไทยของระบบเป็น fallback ระหว่างรอ Noto Sans Thai (Noto Sans ธรรมดาไม่มีอักษรไทย)
+        sans: ["Noto Sans Thai", "Leelawadee UI", "Thonburi", "system-ui", "sans-serif"],
+      },
+      // ระยะบรรทัดปรับสำหรับภาษาไทย: สระบน/ล่างและวรรณยุกต์สูง ค่า default ของ Tailwind (1.43 ที่ text-sm) แน่นเกินไป
+      fontSize: {
+        xs:   ["0.75rem",  { lineHeight: "1.125rem" }],
+        sm:   ["0.875rem", { lineHeight: "1.375rem" }],
+        base: ["1rem",     { lineHeight: "1.625rem" }],
+        lg:   ["1.125rem", { lineHeight: "1.75rem" }],
+        xl:   ["1.25rem",  { lineHeight: "1.875rem" }],
+        "2xl": ["1.5rem",  { lineHeight: "2.125rem" }],
       },
     },
   },

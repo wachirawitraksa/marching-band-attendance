@@ -73,6 +73,9 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   html { scroll-behavior: smooth; }
+  /* บรรทัดสุดท้ายไม่เหลือคำเดี่ยว / หัวข้อแตกบรรทัดสมดุล (ตัดคำไทยโดยเบราว์เซอร์) */
+  h1, h2, h3, h4 { text-wrap: balance; }
+  p { text-wrap: pretty; }
 
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }

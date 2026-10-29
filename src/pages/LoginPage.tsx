@@ -93,7 +93,7 @@ export default function LoginPage() {
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center mb-4 shadow-lg gold-glow">
             <Music2 size={28} className="text-black" />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-wide font-display">Srinan Marching Band</h1>
+          <h1 className="text-2xl font-bold text-white tracking-wide">Srinan Marching Band</h1>
           <p className="text-sm text-brand-400/70 mt-1">ระบบเช็คชื่อนักเรียน</p>
         </div>
 

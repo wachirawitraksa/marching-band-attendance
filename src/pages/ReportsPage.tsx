@@ -189,7 +189,7 @@ export default function ReportsPage() {
           <Card>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm tabular-nums">
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
                       <th className="text-left p-3 font-medium text-muted-foreground text-xs">นักเรียน</th>
