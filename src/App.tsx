@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { Component, lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
@@ -35,6 +35,31 @@ const ProfilePage        = lazyPage(() => import('@/pages/ProfilePage'));
 const AdminPage          = lazyPage(() => import('@/pages/AdminPage'));
 const SchedulePage       = lazyPage(() => import('@/pages/SchedulePage'));
 const NotFoundPage       = lazyPage(() => import('@/pages/NotFoundPage'));
+
+// chunk โหลดไม่ได้จริง ๆ (เน็ตหลุด / reload แล้วยังพัง) → แสดงทางออกแทนจอขาว
+class PageErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: unknown) { console.error('Page failed to load:', error); }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <div role="alert" className="min-h-[50vh] flex items-center justify-center px-6">
+        <div className="max-w-sm text-center space-y-3">
+          <p className="text-base font-semibold text-foreground">โหลดหน้านี้ไม่สำเร็จ</p>
+          <p className="text-sm text-muted-foreground">ตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง ถ้าเพิ่งมีการอัปเดตระบบ การโหลดใหม่จะดึงเวอร์ชันล่าสุดมาให้</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center justify-center h-11 px-5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
+          >
+            ลองอีกครั้ง
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
 
 function PageLoader() {
   return (
@@ -191,6 +216,7 @@ export default function App() {
 
   return (
     <>
+      <PageErrorBoundary>
       <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public routes */}
@@ -221,6 +247,7 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       </Suspense>
+      </PageErrorBoundary>
       <Toaster />
     </>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Outlet, NavLink } from 'react-router-dom';
 import {
@@ -34,6 +34,13 @@ const navItems: NavItem[] = [
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // ปุ่มที่เปิด drawer (header หรือเมนูล่าง) — คืน focus ให้ปุ่มนั้นตอนปิด
+  // (Radix คืน focus ให้ element ที่ focus อยู่ก่อนเปิด ซึ่งบนมือถือการแตะปุ่มมักไม่ทำให้ปุ่มได้ focus)
+  const menuOpenerRef = useRef<HTMLButtonElement | null>(null);
+  const openMenu = (e: React.MouseEvent<HTMLButtonElement>) => {
+    menuOpenerRef.current = e.currentTarget;
+    setSidebarOpen(true);
+  };
   const { profile, signOut } = useAuth();
   const { theme, toggleTheme } = useAuthStore();
 
@@ -151,6 +158,12 @@ export function AppLayout() {
           <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/60 md:hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0" />
           <DialogPrimitive.Content
             aria-describedby={undefined}
+            onCloseAutoFocus={(e) => {
+              if (menuOpenerRef.current?.isConnected) {
+                e.preventDefault();
+                menuOpenerRef.current.focus();
+              }
+            }}
             className="fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border md:hidden duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left focus:outline-none"
             style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
@@ -165,7 +178,7 @@ export function AppLayout() {
         {/* Top header - mobile */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
           <button
-            onClick={() => setSidebarOpen(true)}
+            onClick={openMenu}
             aria-label="เปิดเมนู"
             aria-haspopup="dialog"
             aria-expanded={sidebarOpen}
@@ -218,7 +231,7 @@ export function AppLayout() {
             {hasOverflow && (
               <button
                 type="button"
-                onClick={() => setSidebarOpen(true)}
+                onClick={openMenu}
                 aria-haspopup="dialog"
                 aria-expanded={sidebarOpen}
                 className="flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[56px] px-1 text-muted-foreground transition-colors"

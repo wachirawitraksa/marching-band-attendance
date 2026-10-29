@@ -134,9 +134,10 @@
   .note-particle { display: none; }
   .page-enter,
   .animate-fade-in { animation-name: fadeOnly; }
-  /* tailwindcss-animate (dialog / drawer / toast / dropdown): เก็บ fade ไว้ ตัด zoom และ slide */
-  .animate-in,
-  .animate-out {
+  /* tailwindcss-animate (dialog / drawer / toast / dropdown): เก็บ fade ไว้ ตัด zoom และ slide
+     (class จริงมี variant นำหน้า เช่น data-[state=open]:animate-in จึงต้องจับด้วย [class*=]) */
+  [class*="animate-in"],
+  [class*="animate-out"] {
     --tw-enter-scale: 1 !important;
     --tw-enter-translate-x: 0 !important;
     --tw-enter-translate-y: 0 !important;
