@@ -131,7 +131,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <Link to="/attendance">
-          <Button variant="gold" size="sm" className="gap-1.5">
+          <Button variant="brand" size="sm" className="gap-1.5">
             <ClipboardCheck size={15} />
             <span className="hidden sm:inline">เช็คชื่อ</span>
           </Button>
@@ -144,7 +144,7 @@ export default function DashboardPage() {
           <CardContent className="p-4 flex items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <Badge variant="gold" className="text-xs px-1.5 py-0 h-5 motion-safe:animate-pulse">เปิดอยู่</Badge>
+                <Badge variant="brand" className="text-xs px-1.5 py-0 h-5 motion-safe:animate-pulse">เปิดอยู่</Badge>
                 <span className="text-sm font-semibold">{SESSION_TYPE_LABELS[openSession.session_type]}</span>
               </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
@@ -152,13 +152,13 @@ export default function DashboardPage() {
               </p>
             </div>
             <Button
-              variant="gold"
+              variant="brand"
               className="gap-1.5 shrink-0"
               onClick={handleQuickCheckIn}
               disabled={checkingIn}
             >
               {checkingIn ? (
-                <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <ClipboardCheck size={16} />
               )}
@@ -264,7 +264,7 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{SESSION_TYPE_LABELS[session.session_type]}</span>
                         {isOpen && (
-                          <Badge variant="gold" className="text-xs px-1.5 py-0 h-5 motion-safe:animate-pulse">
+                          <Badge variant="brand" className="text-xs px-1.5 py-0 h-5 motion-safe:animate-pulse">
                             เปิดอยู่
                           </Badge>
                         )}

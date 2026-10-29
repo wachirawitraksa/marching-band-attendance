@@ -34,8 +34,8 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen animated-bg flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center mb-4 shadow-lg gold-glow">
-            <Music2 size={24} className="text-black" />
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center mb-4 shadow-lg brand-glow">
+            <Music2 size={24} className="text-white" />
           </div>
           <h1 className="text-xl font-bold text-white">วงโยธวาทิต</h1>
         </div>
@@ -94,7 +94,7 @@ export default function ForgotPasswordPage() {
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
-                      <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       กำลังส่ง...
                     </span>
                   ) : 'ส่งลิงก์รีเซ็ตรหัสผ่าน'}

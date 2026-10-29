@@ -287,7 +287,7 @@ export default function StudentsPage() {
               <GraduationCap size={13} /> เลื่อนชั้นปีการศึกษา
             </Button>
           )}
-          <Button variant="gold" size="sm" className="gap-1.5" onClick={() => { setAddForm(emptyForm); setAddError(''); setAddDialog(true); }}>
+          <Button variant="brand" size="sm" className="gap-1.5" onClick={() => { setAddForm(emptyForm); setAddError(''); setAddDialog(true); }}>
             <Plus size={14} /> เพิ่มนักเรียน
           </Button>
         </div>

@@ -7,8 +7,8 @@ export default function NotFoundPage() {
     <div className="min-h-screen animated-bg flex items-center justify-center px-4">
       <div className="text-center space-y-5">
         <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center gold-glow">
-            <Music2 size={28} className="text-black" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center brand-glow">
+            <Music2 size={28} className="text-white" />
           </div>
         </div>
         <h1 className="text-7xl font-bold text-brand-400">404</h1>

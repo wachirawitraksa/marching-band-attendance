@@ -225,7 +225,7 @@ export default function AttendancePage() {
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-base">{SESSION_TYPE_LABELS[session.session_type]}</CardTitle>
                   {isOpen && (
-                    <Badge variant="gold" className="motion-safe:animate-pulse text-xs">เปิดเช็คชื่อ</Badge>
+                    <Badge variant="brand" className="motion-safe:animate-pulse text-xs">เปิดเช็คชื่อ</Badge>
                   )}
                   {session.is_override && (
                     <Badge variant="info" className="text-xs">ซ้อมพิเศษ</Badge>
@@ -385,7 +385,7 @@ export default function AttendancePage() {
                     variant={overrideStatus === s ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setOverrideStatus(s)}
-                    className={overrideStatus === s ? 'bg-brand-500 text-black hover:bg-brand-400' : ''}
+                    className={overrideStatus === s ? 'bg-brand-500 text-white hover:bg-brand-400' : ''}
                   >
                     {ATTENDANCE_STATUS_LABELS[s]}
                   </Button>

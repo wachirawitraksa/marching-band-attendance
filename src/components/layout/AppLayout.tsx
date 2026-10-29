@@ -60,7 +60,7 @@ export function AppLayout() {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-border">
-        <div className="w-9 h-9 rounded-xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center gold-glow-sm">
+        <div className="w-9 h-9 rounded-xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center brand-glow-sm">
           <Music2 size={18} className="text-brand-text" />
         </div>
         <div className="flex flex-col">
@@ -83,7 +83,7 @@ export function AppLayout() {
               <p className="text-xs font-semibold truncate text-foreground">
                 {profile.nickname ? `${profile.nickname}` : profile.full_name.split(' ')[0]}
               </p>
-              <Badge variant="gold" className="text-xs px-1.5 py-0 h-5">
+              <Badge variant="brand" className="text-xs px-1.5 py-0 h-5">
                 {ROLE_LABELS[profile.role]}
               </Badge>
             </div>

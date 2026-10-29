@@ -83,15 +83,15 @@ export default function LoginPage() {
       ))}
 
       {/* Radial glow */}
-      <div className="absolute inset-0 bg-radial-gradient pointer-events-none" style={{
+      <div className="absolute inset-0 pointer-events-none" style={{
         background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(245,158,11,0.06) 0%, transparent 70%)'
       }} />
 
       <div className="w-full max-w-sm relative z-10">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center mb-4 shadow-lg gold-glow">
-            <Music2 size={28} className="text-black" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center mb-4 shadow-lg brand-glow">
+            <Music2 size={28} className="text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-wide">Srinan Marching Band</h1>
           <p className="text-sm text-brand-400/70 mt-1">ระบบเช็คชื่อนักเรียน</p>
@@ -163,7 +163,7 @@ export default function LoginPage() {
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   กำลังเข้าสู่ระบบ...
                 </span>
               ) : (

@@ -50,7 +50,7 @@ export default {
         info: "hsl(var(--info))",
         holiday: "hsl(var(--holiday))",
         "brand-text": "hsl(var(--brand-text))",
-        // custom brand color replacing amber/gold
+        // brand teal (#17636A)
         brand: {
           DEFAULT: "#17636A",
           "50":  "#edf9fa",
@@ -63,12 +63,6 @@ export default {
           "700": "#0D3F46",
           "800": "#0a2e34",
           "900": "#071f24",
-        },
-        // keep gold as alias for backward compat (now maps to brand)
-        gold: {
-          DEFAULT: "#17636A",
-          light:   "#2a8c95",
-          dark:    "#0E5157",
         },
       },
       borderRadius: {
@@ -89,21 +83,11 @@ export default {
           from: { opacity: "0", transform: "translateY(6px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
-        "pulse-ring": {
-          "0%, 100%": { transform: "scale(1)", opacity: "1" },
-          "50%": { transform: "scale(1.05)", opacity: "0.8" },
-        },
-        float: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-8px)" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
-        "pulse-ring": "pulse-ring 2s ease-in-out infinite",
-        float: "float 3s ease-in-out infinite",
       },
       fontFamily: {
         // ฟอนต์ไทยของระบบเป็น fallback ระหว่างรอ Noto Sans Thai (Noto Sans ธรรมดาไม่มีอักษรไทย)

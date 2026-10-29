@@ -206,7 +206,7 @@ export default function AdminPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-1.5" onClick={refreshUsers}><RefreshCw size={13} /> รีเฟรช</Button>
-          <Button variant="gold" size="sm" className="gap-1.5" onClick={() => setCreateDialog(true)}><UserPlus size={14} /> สร้างบัญชี</Button>
+          <Button variant="brand" size="sm" className="gap-1.5" onClick={() => setCreateDialog(true)}><UserPlus size={14} /> สร้างบัญชี</Button>
         </div>
       </div>
 

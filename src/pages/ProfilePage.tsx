@@ -302,7 +302,7 @@ export default function ProfilePage() {
                 )}
               </div>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <Badge variant="gold">{ROLE_LABELS[profile.role]}</Badge>
+                <Badge variant="brand">{ROLE_LABELS[profile.role]}</Badge>
                 {profile.year_level && <Badge variant="outline">ม.{profile.year_level}</Badge>}
                 {profile.section && (
                   <Badge variant="outline" style={{ borderColor: profile.section.color, color: profile.section.color }}>

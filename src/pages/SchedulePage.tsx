@@ -290,7 +290,7 @@ export default function SchedulePage() {
               >
                 <CalendarX size={13} /> วันหยุด
               </Button>
-              <Button variant="gold" size="sm" className="gap-1.5"
+              <Button variant="brand" size="sm" className="gap-1.5"
                 onClick={() => { setAddForm({ date:'', start_time:'07:00', end_time:'08:30', description:'' }); setAddDialog(true); }}
               >
                 <Plus size={14} /> ซ้อมพิเศษ
@@ -406,7 +406,7 @@ export default function SchedulePage() {
                               <p className="text-sm font-medium">
                                 {session.description || SESSION_TYPE_LABELS[session.session_type]}
                               </p>
-                              {isToday    && <Badge variant="gold" className="text-xs">วันนี้</Badge>}
+                              {isToday    && <Badge variant="brand" className="text-xs">วันนี้</Badge>}
                               {isTomorrow && <Badge variant="outline" className="text-xs border-brand-500/40 text-brand-text">พรุ่งนี้</Badge>}
                               {session.is_override && <Badge variant="info" className="text-xs">พิเศษ</Badge>}
                               {isHolRange && <Badge className="text-xs bg-holiday/20 text-holiday border-holiday/30">ช่วงปิดเทอม</Badge>}

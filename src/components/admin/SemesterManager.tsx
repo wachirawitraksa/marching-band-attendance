@@ -101,7 +101,7 @@ export function SemesterManager() {
               {currentTerm.end_date && ` ถึง ${formatThaiDate(currentTerm.end_date)}`}
             </p>
           </div>
-          <Badge variant="gold" className="text-xs">ใช้งานอยู่</Badge>
+          <Badge variant="brand" className="text-xs">ใช้งานอยู่</Badge>
         </div>
       ) : (
         <Alert variant="warning">
@@ -153,7 +153,7 @@ export function SemesterManager() {
               </div>
               <div className="flex items-center gap-2">
                 {term.is_current ? (
-                  <Badge variant="gold" className="text-xs">ปัจจุบัน</Badge>
+                  <Badge variant="brand" className="text-xs">ปัจจุบัน</Badge>
                 ) : (
                   <Button
                     size="sm" variant="outline" className="h-7 text-xs gap-1"
