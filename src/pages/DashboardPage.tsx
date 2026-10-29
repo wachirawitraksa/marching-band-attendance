@@ -8,16 +8,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { useAuthStore } from '@/store/authStore';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useGPS } from '@/hooks/useGPS';
 import { useNow } from '@/hooks/useNow';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
 import { CheckInSuccessAnimation } from '@/components/CheckInSuccessAnimation';
 import {
   formatThaiDate, formatTime, getDayOfWeekThai,
-  getAttendanceWindowState, getTodayBangkok, getBangkokDateWithOffset
+  getAttendanceWindowState, getAttendanceOpenTime, getCheckInStatus, getTodayBangkok, getBangkokDateWithOffset
 } from '@/lib/utils';
 import { SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import {
@@ -50,7 +50,8 @@ export default function DashboardPage() {
 
   // เช็คชื่อด่วนจากหน้าแรก — ใช้ hook เดียวกับหน้า Attendance เพื่อ logic ตรงกันเป๊ะ
   const { checkIn } = useAttendance(today);
-  const { getCurrentPosition, schoolLocation } = useGPS();
+  const { getCurrentPosition, schoolLocation, inRange } = useGPS();
+  const queryClient = useQueryClient();
 
   const days = Array.from({ length: 7 }, (_, i) => getBangkokDateWithOffset(-(6 - i)));
   const { data: weeklyRaw = [] } = useWeeklyAttendance(days, profile?.id, isTeacher);
@@ -84,7 +85,8 @@ export default function DashboardPage() {
     if (!openSession || checkingIn) return;
     setCheckingIn(true);
     try {
-      const gpsData = await getCurrentPosition();
+      // ใช้ตำแหน่งที่จำไว้เฉพาะถ้าครั้งก่อนอยู่ในพื้นที่ (เหมือนหน้าเช็คชื่อ)
+      const gpsData = await getCurrentPosition(!inRange);
 
       if (gpsData.error) {
         toast({ variant: 'destructive', title: 'ตรวจสอบตำแหน่งไม่ได้', description: gpsData.error });
@@ -108,6 +110,8 @@ export default function DashboardPage() {
         gpsData.distance ?? undefined
       );
       setShowSuccess(true);
+      // ให้การ์ด "เปิดอยู่" หายและรายการรอบวันนี้แสดงสถานะใหม่ทันที
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
     } catch (err) {
       toast({
         variant: 'destructive',
@@ -131,12 +135,6 @@ export default function DashboardPage() {
             วัน{getDayOfWeekThai(now)}ที่ {formatThaiDate(now)}
           </p>
         </div>
-        <Link to="/attendance">
-          <Button variant="brand" size="sm" className="gap-1.5">
-            <ClipboardCheck size={15} />
-            <span className="hidden sm:inline">เช็คชื่อ</span>
-          </Button>
-        </Link>
       </div>
 
       {/* เช็คชื่อด่วน — โชว์เฉพาะตอนมี session เปิดอยู่และยังไม่ได้เช็ค */}
@@ -151,6 +149,9 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                 <MapPin size={10} /> เช็คชื่อได้ทันทีถ้าอยู่ในพื้นที่
               </p>
+              {getCheckInStatus(openSession.session_type) === 'late' && (
+                <p className="text-xs text-warning mt-0.5">ตอนนี้เลยเวลามาปกติแล้ว เช็คชื่อจะนับเป็นสาย</p>
+              )}
             </div>
             <Button
               variant="brand"
@@ -171,14 +172,14 @@ export default function DashboardPage() {
 
       {/* Streak + badge — ให้กำลังใจนักเรียน */}
       {!isTeacher && (streak?.current_streak ?? 0) > 0 && (
-        <Card className="bg-gradient-to-br from-holiday/10 to-transparent border-holiday/20">
+        <Card className="bg-gradient-to-br from-brand-500/10 to-transparent border-brand-500/20">
           <CardContent className="p-4 flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-full bg-holiday/15 flex items-center justify-center">
-                <Flame size={20} className="text-holiday" />
+              <div className="w-10 h-10 rounded-full bg-brand-500/15 flex items-center justify-center">
+                <Flame size={20} className="text-brand-text" />
               </div>
               <div>
-                <p className="text-sm font-bold text-holiday">มาซ้อมต่อเนื่อง {streak?.current_streak} ครั้งติด!</p>
+                <p className="text-sm font-bold text-brand-text">มาซ้อมต่อเนื่อง {streak?.current_streak} ครั้งติด!</p>
                 <p className="text-xs text-muted-foreground">สถิติสูงสุด {streak?.longest_streak} ครั้ง</p>
               </div>
             </div>
@@ -261,7 +262,8 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground text-center py-4">ไม่มีรอบซ้อมวันนี้</p>
             ) : (
               todaySessions.map(session => {
-                const isOpen = getAttendanceWindowState(session.session_type, session.start_time, session.end_time, now) === 'open';
+                const windowState = getAttendanceWindowState(session.session_type, session.start_time, session.end_time, now);
+                const isOpen = windowState === 'open';
                 const myRecord = myRecords.find(r => r.session_id === session.id);
                 return (
                   <div key={session.id} className={`flex items-center justify-between p-3 rounded-lg border ${isOpen ? 'border-brand-500/30 bg-brand-500/5' : 'border-border bg-muted/30'}`}>
@@ -284,10 +286,14 @@ export default function DashboardPage() {
                         <Badge variant={myRecord.status === 'present' ? 'success' : myRecord.status === 'late' ? 'warning' : myRecord.status === 'excused' ? 'info' : 'destructive'}>
                           {ATTENDANCE_STATUS_LABELS[myRecord.status]}
                         </Badge>
-                      ) : (
+                      ) : isOpen ? (
                         <Link to="/attendance">
-                          <Button size="sm" variant="outline" className="h-7 text-xs">เช็คชื่อ</Button>
+                          <Button size="sm" variant="brand" className="h-7 text-xs">เช็คชื่อ</Button>
                         </Link>
+                      ) : windowState === 'before' ? (
+                        <span className="text-xs text-muted-foreground">เปิด {getAttendanceOpenTime(session.session_type, session.start_time)} น.</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">หมดเวลาเช็คชื่อ</span>
                       )
                     )}
                     {isTeacher && (
@@ -313,15 +319,6 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {!isTeacher && (
-              <div className="mb-4">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-xs text-muted-foreground">อัตราเข้าร่วม</span>
-                  <span className="text-sm font-bold text-brand-text">{presentRate}%</span>
-                </div>
-                <Progress value={presentRate} className="h-2" />
-              </div>
-            )}
             <div className="h-32">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={weeklyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
