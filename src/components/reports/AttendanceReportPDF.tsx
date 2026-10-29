@@ -101,7 +101,8 @@ const styles = StyleSheet.create({
   symRd:      { fontSize: 6.5, fontFamily: 'Sarabun', color: '#666666', textAlign: 'center' },
   symEmpty:   { fontSize: 8, fontFamily: 'Sarabun', color: '#999999', textAlign: 'center' },
   // Legend
-  legend: { flexDirection: 'row', gap: 12, marginTop: 8, flexWrap: 'wrap' },
+  // คำอธิบายสัญลักษณ์อยู่ท้ายทุกหน้า (fixed) — ไม่ให้หลุดไปอยู่หน้าเปล่าหน้าสุดท้ายเมื่อรายชื่อเต็มหน้าพอดี
+  legend: { position: 'absolute', bottom: 14, left: 24, right: 80, flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   legendDot: { width: 7, height: 7, borderRadius: 3.5 },
   legendText: { fontSize: 7, color: '#666' },
@@ -215,15 +216,15 @@ function AttendanceDocument({ title, dateRange, sessions, rows }: PDFProps) {
             <Text style={styles.subtitle}>{dateRange}</Text>
             {weekLabel !== '' && (
               <Text style={[styles.subtitle, { color: '#d97706', marginTop: 1 }]}>
-                สัปดาห์ {weekLabel} · หน้า {chunkIdx + 1} จาก {chunks.length}
+                สัปดาห์ {weekLabel}{chunks.length > 1 ? ` · สัปดาห์ที่ ${chunkIdx + 1} จาก ${chunks.length}` : ''}
               </Text>
             )}
           </View>
 
           {/* Table */}
           <View style={styles.table}>
-            {/* Table header row */}
-            <View style={styles.tableHeader} wrap={false}>
+            {/* Table header row — fixed: พิมพ์ซ้ำทุกหน้ากระดาษเมื่อรายชื่อยาวเกิน 1 หน้า */}
+            <View style={styles.tableHeader} wrap={false} fixed>
               <View style={styles.cellNo}>
                 <Text style={styles.headerText}>#</Text>
               </View>
@@ -288,7 +289,7 @@ function AttendanceDocument({ title, dateRange, sessions, rows }: PDFProps) {
           </View>
 
           {/* Legend */}
-          <View style={styles.legend}>
+          <View style={styles.legend} fixed>
             {[
               { sym: '/', label: 'มาซ้อม' },
               { sym: 'ส', label: 'มาสาย' },

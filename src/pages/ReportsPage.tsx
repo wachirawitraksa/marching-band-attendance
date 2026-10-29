@@ -70,7 +70,7 @@ export default function ReportsPage() {
     const secStudents = students.filter(s => s.section_id === sec.id);
     const secRecords = totalRecords.filter(r => secStudents.some(s => s.id === r.student_id));
     const present = secRecords.filter(r => r.status === 'present' || r.status === 'late').length;
-    return { name: sec.name.replace('เครื่อง', '').substring(0, 8), present, total: secRecords.length, rate: calculateAttendanceRate(present, secRecords.length) };
+    return { name: sec.name.replace('เครื่อง', '').trim(), present, total: secRecords.length, rate: calculateAttendanceRate(present, secRecords.length) };
   });
 
   const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
@@ -186,7 +186,7 @@ export default function ReportsPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={sectionStats} margin={{ top: 4, right: 4, left: -25, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                      <XAxis dataKey="name" interval={0} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                       <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                       <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} formatter={(v) => [`${v}%`, 'อัตราเข้าร่วม']} />
                       <Bar dataKey="rate" fill="hsl(var(--brand-text))" radius={[4, 4, 0, 0]} />

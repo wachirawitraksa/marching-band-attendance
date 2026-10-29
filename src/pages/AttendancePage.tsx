@@ -2,7 +2,7 @@ import { getErrorMessage } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import {
   MapPin, QrCode, Clock, CheckCircle2, XCircle, AlertCircle,
-  Loader2, FileText, Navigation, RefreshCw, Info, UserCheck
+  Loader2, FileText, Navigation, RefreshCw, Info, UserCheck, ChevronDown
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -313,6 +313,7 @@ export default function AttendancePage() {
               {isTeacher && (
                 <TeacherAttendanceView
                   sessionId={session.id}
+                  defaultExpanded={isOpen || sessions.length === 1}
                   onOverride={(studentId, studentName) =>
                     setOverrideDialog({ open: true, studentId, sessionId: session.id, studentName })
                   }
@@ -415,7 +416,11 @@ export default function AttendancePage() {
   );
 }
 
-function TeacherAttendanceView({ sessionId, onOverride }: { sessionId: string; onOverride: (id: string, name: string) => void }) {
+// รายชื่อไม่อยู่ในกล่อง scroll ซ้อน (เลื่อนยากบนมือถือ) — แสดงต่อกับหน้าเลย แล้วพับ/กางได้ต่อรอบ
+// กางไว้ก่อนเฉพาะรอบที่กำลังเปิดเช็คชื่อ (หรือวันที่มีรอบเดียว)
+function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { sessionId: string; onOverride: (id: string, name: string) => void; defaultExpanded: boolean }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const listId = `attendance-list-${sessionId}`;
   const { records, loading: recordsLoading } = useAllAttendance(sessionId);
   // ใช้ cache เดียวกับ StudentsPage/ReportsPage — สลับหน้าไปมาไม่ fetch ซ้ำ
   const { data: allStudents = [], isLoading: studentsLoading } = useStudents({ graduated: false, activeOnly: true });
@@ -428,12 +433,21 @@ function TeacherAttendanceView({ sessionId, onOverride }: { sessionId: string; o
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">มาแล้ว</span>
-        <span className="font-semibold text-brand-text">{present} / {total} คน</span>
-      </div>
+      <button
+        type="button"
+        onClick={() => setExpanded(v => !v)}
+        aria-expanded={expanded}
+        aria-controls={listId}
+        className="flex w-full items-center justify-between gap-3 min-h-11 -mx-2 px-2 rounded-lg text-sm hover:bg-muted/50 transition-colors"
+      >
+        <span className="text-muted-foreground">มาแล้ว <span className="font-semibold text-brand-text tabular-nums">{present} / {total} คน</span></span>
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          {expanded ? 'ซ่อนรายชื่อ' : 'ดูรายชื่อ'}
+          <ChevronDown size={14} className={expanded ? 'rotate-180 transition-transform' : 'transition-transform'} />
+        </span>
+      </button>
 
-      <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
+      {expanded && <div id={listId} className="space-y-1.5">
         {allStudents.map(student => {
           const record = records.find(r => r.student_id === student.id);
           return (
@@ -468,7 +482,7 @@ function TeacherAttendanceView({ sessionId, onOverride }: { sessionId: string; o
             </div>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }
