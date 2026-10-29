@@ -537,6 +537,29 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
       .sort((a, b) => a.rank - b.rank || (a.student.nickname || a.student.full_name).localeCompare(b.student.nickname || b.student.full_name, 'th'));
   }, [rows, filter, query]);
 
+  // จัดกลุ่มตาม Section แบบที่หัววงนับคนจริง ("Brass 12/18")
+  const sectionGroups = useMemo(() => {
+    const totals = new Map<string, { here: number; total: number }>();
+    rows.forEach(r => {
+      const key = r.student.section_id ?? 'none';
+      const t = totals.get(key) ?? { here: 0, total: 0 };
+      t.total++;
+      if (r.group === 'here') t.here++;
+      totals.set(key, t);
+    });
+    const groups = new Map<string, { key: string; name: string; color: string | null; rows: typeof visible }>();
+    visible.forEach(r => {
+      const key = r.student.section_id ?? 'none';
+      if (!groups.has(key)) {
+        groups.set(key, { key, name: r.student.section?.name ?? 'ไม่ระบุ Section', color: r.student.section?.color ?? null, rows: [] });
+      }
+      groups.get(key)!.rows.push(r);
+    });
+    return [...groups.values()]
+      .sort((a, b) => (a.key === 'none' ? 1 : b.key === 'none' ? -1 : a.name.localeCompare(b.name, 'th')))
+      .map(g => ({ ...g, ...(totals.get(g.key) ?? { here: 0, total: 0 }) }));
+  }, [rows, visible]);
+
   if (loading) return <div className="flex justify-center py-4"><Loader2 size={20} className="animate-spin text-brand-text" /></div>;
 
   return (
@@ -595,8 +618,18 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
           </p>
         )}
 
+        <div className="space-y-4">
+        {sectionGroups.map(group => (
+          <section key={group.key} aria-labelledby={`${listId}-${group.key}`} className="space-y-1">
+            <h4 id={`${listId}-${group.key}`} className="flex items-center justify-between gap-2 px-2 text-xs font-semibold text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                {group.color && <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: group.color }} />}
+                {group.name}
+              </span>
+              <span className="tabular-nums font-medium">มาแล้ว {group.here}/{group.total}</span>
+            </h4>
         <div className="space-y-1.5">
-        {visible.map(({ student, record, leave }) => {
+        {group.rows.map(({ student, record, leave }) => {
           return (
             <div key={student.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/50">
               <div className="flex items-center gap-2.5">
@@ -632,6 +665,9 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
             </div>
           );
         })}
+        </div>
+          </section>
+        ))}
         </div>
       </div>}
     </div>
