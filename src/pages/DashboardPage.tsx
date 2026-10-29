@@ -169,14 +169,14 @@ export default function DashboardPage() {
 
       {/* Streak + badge — ให้กำลังใจนักเรียน */}
       {!isTeacher && (streak?.current_streak ?? 0) > 0 && (
-        <Card className="bg-gradient-to-br from-orange-500/10 to-transparent border-orange-500/20">
+        <Card className="bg-gradient-to-br from-holiday/10 to-transparent border-holiday/20">
           <CardContent className="p-4 flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-full bg-orange-500/15 flex items-center justify-center">
-                <Flame size={20} className="text-orange-400" />
+              <div className="w-10 h-10 rounded-full bg-holiday/15 flex items-center justify-center">
+                <Flame size={20} className="text-holiday" />
               </div>
               <div>
-                <p className="text-sm font-bold text-orange-400">มาซ้อมต่อเนื่อง {streak?.current_streak} ครั้งติด!</p>
+                <p className="text-sm font-bold text-holiday">มาซ้อมต่อเนื่อง {streak?.current_streak} ครั้งติด!</p>
                 <p className="text-xs text-muted-foreground">สถิติสูงสุด {streak?.longest_streak} ครั้ง</p>
               </div>
             </div>
@@ -184,7 +184,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-1.5">
                 {badges.slice(0, 4).map((b) => (
                   <div key={b.badge.code} title={b.badge.name} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-base">
-                    {b.badge.icon || <Award size={14} className="text-brand-400" />}
+                    {b.badge.icon || <Award size={14} className="text-brand-text" />}
                   </div>
                 ))}
               </div>
@@ -195,34 +195,34 @@ export default function DashboardPage() {
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-green-500/5 border-green-500/20">
+        <Card className="bg-success/5 border-success/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">มาซ้อม</span>
-              <CheckCircle2 size={16} className="text-green-400" />
+              <CheckCircle2 size={16} className="text-success" />
             </div>
-            <p className="text-2xl font-bold text-green-400">{stats.present}</p>
+            <p className="text-2xl font-bold text-success">{stats.present}</p>
             {isTeacher && <p className="text-xs text-muted-foreground mt-0.5">ครั้ง</p>}
           </CardContent>
         </Card>
 
-        <Card className="bg-red-500/5 border-red-500/20">
+        <Card className="bg-danger/5 border-danger/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">ขาด</span>
-              <XCircle size={16} className="text-red-400" />
+              <XCircle size={16} className="text-danger" />
             </div>
-            <p className="text-2xl font-bold text-red-400">{stats.absent}</p>
+            <p className="text-2xl font-bold text-danger">{stats.absent}</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-yellow-500/5 border-yellow-500/20">
+        <Card className="bg-warning/5 border-warning/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">มาสาย</span>
-              <AlertCircle size={16} className="text-yellow-400" />
+              <AlertCircle size={16} className="text-warning" />
             </div>
-            <p className="text-2xl font-bold text-yellow-400">{stats.late}</p>
+            <p className="text-2xl font-bold text-warning">{stats.late}</p>
           </CardContent>
         </Card>
 
@@ -232,9 +232,9 @@ export default function DashboardPage() {
               <span className="text-xs text-muted-foreground">
                 {isTeacher ? 'นักเรียน' : 'อัตราเข้าร่วม'}
               </span>
-              {isTeacher ? <Users size={16} className="text-brand-400" /> : <TrendingUp size={16} className="text-brand-400" />}
+              {isTeacher ? <Users size={16} className="text-brand-text" /> : <TrendingUp size={16} className="text-brand-text" />}
             </div>
-            <p className="text-2xl font-bold text-brand-400">
+            <p className="text-2xl font-bold text-brand-text">
               {isTeacher ? totalStudents : `${presentRate}%`}
             </p>
           </CardContent>
@@ -246,7 +246,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Calendar size={16} className="text-brand-400" />
+              <Calendar size={16} className="text-brand-text" />
               รอบซ้อมวันนี้
             </CardTitle>
           </CardHeader>
@@ -302,7 +302,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <TrendingUp size={16} className="text-brand-400" />
+              <TrendingUp size={16} className="text-brand-text" />
               สถิติ 7 วัน
             </CardTitle>
           </CardHeader>
@@ -311,7 +311,7 @@ export default function DashboardPage() {
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="text-xs text-muted-foreground">อัตราเข้าร่วม</span>
-                  <span className="text-sm font-bold text-brand-400">{presentRate}%</span>
+                  <span className="text-sm font-bold text-brand-text">{presentRate}%</span>
                 </div>
                 <Progress value={presentRate} className="h-2" />
               </div>
@@ -321,18 +321,18 @@ export default function DashboardPage() {
                 <AreaChart data={weeklyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="presentGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                      <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#666' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#666' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
                   <Tooltip
                     contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
                   />
-                  <Area type="monotone" dataKey="มาซ้อม" stroke="#22c55e" fill="url(#presentGrad)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="ขาดซ้อม" stroke="#ef4444" fill="none" strokeWidth={1.5} strokeDasharray="3 3" />
+                  <Area type="monotone" dataKey="มาซ้อม" stroke="hsl(var(--success))" fill="url(#presentGrad)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="ขาดซ้อม" stroke="hsl(var(--danger))" fill="none" strokeWidth={1.5} strokeDasharray="3 3" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -347,7 +347,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold">ประวัติล่าสุด</CardTitle>
               <Link to="/reports">
-                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-brand-400">
+                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-brand-text">
                   ดูทั้งหมด <ChevronRight size={12} />
                 </Button>
               </Link>

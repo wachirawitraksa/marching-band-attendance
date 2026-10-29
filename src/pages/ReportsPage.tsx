@@ -85,7 +85,7 @@ export default function ReportsPage() {
     );
   }
 
-  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 size={32} className="animate-spin text-brand-400" /></div>;
+  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 size={32} className="animate-spin text-brand-text" /></div>;
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-7xl mx-auto">
@@ -94,7 +94,7 @@ export default function ReportsPage() {
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2"><BarChart3 size={20} className="text-brand-400" /> รายงาน</h1>
+          <h1 className="text-xl font-bold flex items-center gap-2"><BarChart3 size={20} className="text-brand-text" /> รายงาน</h1>
           <p className="text-sm text-muted-foreground">ภาพรวมการเข้าร่วมซ้อม</p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -125,10 +125,10 @@ export default function ReportsPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'นักเรียน', value: filtered.length, color: 'text-brand-400', icon: <Users size={16} /> },
-          { label: 'อัตราเข้าร่วม', value: `${overallRate}%`, color: overallRate >= 80 ? 'text-green-400' : overallRate >= 60 ? 'text-yellow-400' : 'text-red-400', icon: <TrendingUp size={16} /> },
-          { label: 'มาซ้อม', value: totalRecords.filter(r => r.status === 'present').length, color: 'text-green-400', icon: <Calendar size={16} /> },
-          { label: 'ขาดซ้อม', value: totalRecords.filter(r => r.status === 'absent').length, color: 'text-red-400', icon: <Calendar size={16} /> },
+          { label: 'นักเรียน', value: filtered.length, color: 'text-brand-text', icon: <Users size={16} /> },
+          { label: 'อัตราเข้าร่วม', value: `${overallRate}%`, color: overallRate >= 80 ? 'text-success' : overallRate >= 60 ? 'text-warning' : 'text-danger', icon: <TrendingUp size={16} /> },
+          { label: 'มาซ้อม', value: totalRecords.filter(r => r.status === 'present').length, color: 'text-success', icon: <Calendar size={16} /> },
+          { label: 'ขาดซ้อม', value: totalRecords.filter(r => r.status === 'absent').length, color: 'text-danger', icon: <Calendar size={16} /> },
         ].map((stat, i) => (
           <Card key={i}>
             <CardContent className="p-4">
@@ -194,10 +194,10 @@ export default function ReportsPage() {
                     <tr className="border-b border-border bg-muted/30">
                       <th className="text-left p-3 font-medium text-muted-foreground text-xs">นักเรียน</th>
                       <th className="text-left p-3 font-medium text-muted-foreground text-xs hidden md:table-cell">Section</th>
-                      <th className="text-center p-3 font-medium text-green-400 text-xs">มา</th>
-                      <th className="text-center p-3 font-medium text-yellow-400 text-xs">สาย</th>
-                      <th className="text-center p-3 font-medium text-red-400 text-xs">ขาด</th>
-                      <th className="text-center p-3 font-medium text-blue-400 text-xs">ลา</th>
+                      <th className="text-center p-3 font-medium text-success text-xs">มา</th>
+                      <th className="text-center p-3 font-medium text-warning text-xs">สาย</th>
+                      <th className="text-center p-3 font-medium text-danger text-xs">ขาด</th>
+                      <th className="text-center p-3 font-medium text-info text-xs">ลา</th>
                       <th className="text-left p-3 font-medium text-muted-foreground text-xs">อัตรา</th>
                       <th className="text-center p-3 font-medium text-muted-foreground text-xs">ดูรายงาน</th>
                     </tr>
@@ -211,7 +211,7 @@ export default function ReportsPage() {
                             <div className="flex items-center gap-2">
                               <Avatar className="w-7 h-7">
                                 <AvatarImage src={student.profile_picture_url || ''} />
-                                <AvatarFallback className="text-[10px] bg-brand-500/20 text-brand-400">{getAvatarFallback(student.full_name)}</AvatarFallback>
+                                <AvatarFallback className="text-[10px] bg-brand-500/20 text-brand-text">{getAvatarFallback(student.full_name)}</AvatarFallback>
                               </Avatar>
                               <div>
                                 <p className="font-medium text-xs">{student.nickname || student.full_name}</p>
@@ -220,20 +220,20 @@ export default function ReportsPage() {
                             </div>
                           </td>
                           <td className="p-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{student.section?.name || '-'}</span></td>
-                          <td className="p-3 text-center text-green-400 font-semibold text-xs">{s.present}</td>
-                          <td className="p-3 text-center text-yellow-400 font-semibold text-xs">{s.late}</td>
-                          <td className="p-3 text-center text-red-400 font-semibold text-xs">{s.absent}</td>
-                          <td className="p-3 text-center text-blue-400 font-semibold text-xs">{s.excused}</td>
+                          <td className="p-3 text-center text-success font-semibold text-xs">{s.present}</td>
+                          <td className="p-3 text-center text-warning font-semibold text-xs">{s.late}</td>
+                          <td className="p-3 text-center text-danger font-semibold text-xs">{s.absent}</td>
+                          <td className="p-3 text-center text-info font-semibold text-xs">{s.excused}</td>
                           <td className="p-3 min-w-[80px]">
                             <div className="flex items-center gap-1.5">
                               <Progress value={s.rate} className="h-1.5 flex-1" />
-                              <span className={`text-xs font-bold w-8 text-right ${s.rate >= 80 ? 'text-green-400' : s.rate >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>{s.rate}%</span>
+                              <span className={`text-xs font-bold w-8 text-right ${s.rate >= 80 ? 'text-success' : s.rate >= 60 ? 'text-warning' : 'text-danger'}`}>{s.rate}%</span>
                             </div>
                           </td>
                           <td className="p-3 text-center">
                             <Button
                               size="sm" variant="ghost"
-                              className="h-7 px-2 text-xs gap-1 text-brand-400 hover:bg-brand-500/10"
+                              className="h-7 px-2 text-xs gap-1 text-brand-text hover:bg-brand-500/10"
                               onClick={() => setCalendarStudent(student)}
                             >
                               <Eye size={12} /> ปฏิทิน
@@ -266,7 +266,7 @@ export default function ReportsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Progress value={rate} className="flex-1 h-2" />
-                      <span className={`text-sm font-bold ${rate >= 80 ? 'text-green-400' : rate >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>{rate}%</span>
+                      <span className={`text-sm font-bold ${rate >= 80 ? 'text-success' : rate >= 60 ? 'text-warning' : 'text-danger'}`}>{rate}%</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">เข้าร่วม {present} / {secRecords.length} ครั้ง</p>
                   </CardContent>
@@ -299,23 +299,23 @@ function StudentSelfReport({ profile, allRecords, onViewCalendar }: { profile: P
                   strokeDasharray={`${2 * Math.PI * 26 * rate / 100} ${2 * Math.PI * 26}`} strokeLinecap="round" />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-sm font-bold text-brand-400">{rate}%</span>
+                <span className="text-sm font-bold text-brand-text">{rate}%</span>
               </div>
             </div>
             <div className="flex-1">
               <p className="font-semibold text-lg">อัตราเข้าร่วม</p>
               <p className="text-sm text-muted-foreground">รวมทั้งหมด {allRecords.length} ครั้ง</p>
-              <Button size="sm" variant="outline" className="mt-2 h-7 text-xs gap-1 text-brand-400 border-brand-500/30" onClick={onViewCalendar}>
+              <Button size="sm" variant="outline" className="mt-2 h-7 text-xs gap-1 text-brand-text border-brand-500/30" onClick={onViewCalendar}>
                 <Calendar size={12} /> ดูปฏิทิน
               </Button>
             </div>
           </div>
           <div className="grid grid-cols-4 gap-2 text-center">
             {[
-              { label: 'มา', value: present, color: 'text-green-400', bg: 'bg-green-500/10' },
-              { label: 'สาย', value: late, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-              { label: 'ขาด', value: absent, color: 'text-red-400', bg: 'bg-red-500/10' },
-              { label: 'ลา', value: excused, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+              { label: 'มา', value: present, color: 'text-success', bg: 'bg-success/10' },
+              { label: 'สาย', value: late, color: 'text-warning', bg: 'bg-warning/10' },
+              { label: 'ขาด', value: absent, color: 'text-danger', bg: 'bg-danger/10' },
+              { label: 'ลา', value: excused, color: 'text-info', bg: 'bg-info/10' },
             ].map(s => (
               <div key={s.label} className={`p-2 rounded-lg ${s.bg}`}>
                 <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>

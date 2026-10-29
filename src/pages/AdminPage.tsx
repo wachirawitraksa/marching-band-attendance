@@ -194,13 +194,13 @@ export default function AdminPage() {
     student: users.filter(u => u.role === 'student'),
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 size={32} className="animate-spin text-brand-400" /></div>;
+  if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 size={32} className="animate-spin text-brand-text" /></div>;
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-5xl mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2"><Settings size={20} className="text-brand-400" /> จัดการระบบ</h1>
+          <h1 className="text-xl font-bold flex items-center gap-2"><Settings size={20} className="text-brand-text" /> จัดการระบบ</h1>
           <p className="text-sm text-muted-foreground">บัญชีผู้ใช้, ภาคเรียน และการตั้งค่า</p>
         </div>
         <div className="flex gap-2">
@@ -223,7 +223,7 @@ export default function AdminPage() {
             <Card key={role}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Shield size={14} className="text-brand-400" />
+                  <Shield size={14} className="text-brand-text" />
                   {ROLE_LABELS[role]} ({roleGroups[role].length} คน)
                 </CardTitle>
               </CardHeader>
@@ -237,7 +237,7 @@ export default function AdminPage() {
                         <div className="flex items-center gap-2.5">
                           <Avatar className="w-8 h-8">
                             <AvatarImage src={user.profile_picture_url || ''} />
-                            <AvatarFallback className="text-xs bg-brand-500/20 text-brand-400">{getAvatarFallback(user.full_name)}</AvatarFallback>
+                            <AvatarFallback className="text-xs bg-brand-500/20 text-brand-text">{getAvatarFallback(user.full_name)}</AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="text-sm font-medium">{user.full_name}{user.nickname && <span className="text-muted-foreground text-xs ml-1">({user.nickname})</span>}</p>
@@ -275,7 +275,7 @@ export default function AdminPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <BookOpen size={15} className="text-brand-400" /> จัดการภาคเรียน
+                <BookOpen size={15} className="text-brand-text" /> จัดการภาคเรียน
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -326,7 +326,7 @@ export default function AdminPage() {
       <Dialog open={createDialog} onOpenChange={o => { if (!o) { setCreateDialog(false); setCreateError(''); setForm(defaultForm); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><UserPlus size={18} className="text-brand-400" /> สร้างบัญชีใหม่</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><UserPlus size={18} className="text-brand-text" /> สร้างบัญชีใหม่</DialogTitle>
             <DialogDescription>กรอกข้อมูลเพื่อสร้างบัญชีผู้ใช้ใหม่</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-1 max-h-[65vh] overflow-y-auto pr-1">

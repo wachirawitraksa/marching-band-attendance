@@ -188,7 +188,7 @@ export function ExportReportDialog({ students }: Props) {
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5 h-9 text-xs border-brand-500/30 text-brand-400 hover:bg-brand-500/10">
+        <Button variant="outline" size="sm" className="gap-1.5 h-9 text-xs border-brand-500/30 text-brand-text hover:bg-brand-500/10">
           <FileDown size={14} />
           ดาวน์โหลด PDF
         </Button>
@@ -197,7 +197,7 @@ export function ExportReportDialog({ students }: Props) {
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Calendar size={16} className="text-brand-400" />
+            <Calendar size={16} className="text-brand-text" />
             ออกรายงาน PDF
           </DialogTitle>
         </DialogHeader>
@@ -245,7 +245,7 @@ export function ExportReportDialog({ students }: Props) {
 
           {/* Info */}
           <p className="text-xs text-muted-foreground">
-            จะแสดงนักเรียน <span className="text-brand-400 font-semibold">{students.length} คน</span> ตาม filter ที่เลือกไว้
+            จะแสดงนักเรียน <span className="text-brand-text font-semibold">{students.length} คน</span> ตาม filter ที่เลือกไว้
           </p>
 
           {/* Actions */}

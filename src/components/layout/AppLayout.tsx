@@ -58,7 +58,7 @@ export function AppLayout() {
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-border">
         <div className="w-9 h-9 rounded-xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center gold-glow-sm">
-          <Music2 size={18} className="text-brand-400" />
+          <Music2 size={18} className="text-brand-text" />
         </div>
         <div className="flex flex-col">
           <span className="font-bold text-sm leading-tight text-foreground">Strisrinan</span>
@@ -72,7 +72,7 @@ export function AppLayout() {
           <div className="flex items-center gap-2.5">
             <Avatar className="w-8 h-8">
               <AvatarImage src={profile.profile_picture_url || ''} />
-              <AvatarFallback className="bg-brand-500/20 text-brand-400 text-xs">
+              <AvatarFallback className="bg-brand-500/20 text-brand-text text-xs">
                 {getAvatarFallback(profile.full_name)}
               </AvatarFallback>
             </Avatar>
@@ -99,7 +99,7 @@ export function AppLayout() {
               cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150",
                 isActive
-                  ? "bg-brand-500/15 text-brand-400 font-medium"
+                  ? "bg-brand-500/15 text-brand-text font-medium"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )
             }
@@ -126,7 +126,7 @@ export function AppLayout() {
         </button>
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:bg-red-500/10 w-full transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-danger hover:bg-danger/10 w-full transition-colors"
         >
           <LogOut size={18} />
           <span>ออกจากระบบ</span>
@@ -173,7 +173,7 @@ export function AppLayout() {
 
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-brand-500/20 flex items-center justify-center">
-              <Music2 size={14} className="text-brand-400" />
+              <Music2 size={14} className="text-brand-text" />
             </div>
             <span className="font-bold text-sm">Srinan Marching Band</span>
           </div>
@@ -205,7 +205,7 @@ export function AppLayout() {
                   to={item.path}
                   className={cn(
                     "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors min-w-[48px]",
-                    isActive ? "text-brand-400" : "text-muted-foreground"
+                    isActive ? "text-brand-text" : "text-muted-foreground"
                   )}
                 >
                   {item.icon}

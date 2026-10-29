@@ -33,10 +33,10 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 const STATUS_BG: Record<string, string> = {
-  present: 'bg-green-500/10 border-green-500/30 text-green-400',
-  absent: 'bg-red-500/10 border-red-500/30 text-red-400',
-  late: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
-  excused: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+  present: 'bg-success/10 border-success/30 text-success',
+  absent: 'bg-danger/10 border-danger/30 text-danger',
+  late: 'bg-warning/10 border-warning/30 text-warning',
+  excused: 'bg-info/10 border-info/30 text-info',
   rd: 'bg-gray-500/10 border-gray-500/30 text-gray-400',
 };
 
@@ -138,7 +138,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
           <div className="flex items-center gap-3">
             <Avatar className="w-10 h-10">
               <AvatarImage src={student.profile_picture_url || ''} alt={student.full_name} />
-              <AvatarFallback className="bg-brand-500/20 text-brand-400 font-semibold">
+              <AvatarFallback className="bg-brand-500/20 text-brand-text font-semibold">
                 {getAvatarFallback(student.full_name)}
               </AvatarFallback>
             </Avatar>
@@ -168,10 +168,10 @@ export function StudentCalendarReport({ student, onClose }: Props) {
           {/* Stats row */}
           <div className="grid grid-cols-4 gap-2">
             {[
-              { label: 'มา', value: totalPresent, color: 'text-green-400', bg: 'bg-green-500/10' },
-              { label: 'สาย', value: totalLate, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-              { label: 'ขาด', value: totalAbsent, color: 'text-red-400', bg: 'bg-red-500/10' },
-              { label: 'ลา', value: totalExcused, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+              { label: 'มา', value: totalPresent, color: 'text-success', bg: 'bg-success/10' },
+              { label: 'สาย', value: totalLate, color: 'text-warning', bg: 'bg-warning/10' },
+              { label: 'ขาด', value: totalAbsent, color: 'text-danger', bg: 'bg-danger/10' },
+              { label: 'ลา', value: totalExcused, color: 'text-info', bg: 'bg-info/10' },
             ].map(s => (
               <div key={s.label} className={`${s.bg} rounded-lg p-2 text-center`}>
                 <p className={`text-lg font-bold leading-none ${s.color}`}>{s.value}</p>
@@ -186,7 +186,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
               <span className="text-muted-foreground">
                 อัตราเข้าร่วม ({filterYear === 'all' ? 'รวมทั้งหมด' : `ปีการศึกษา ${filterYear}`})
               </span>
-              <span className={`font-bold ${rate >= 80 ? 'text-green-400' : rate >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>{rate}%</span>
+              <span className={`font-bold ${rate >= 80 ? 'text-success' : rate >= 60 ? 'text-warning' : 'text-danger'}`}>{rate}%</span>
             </div>
             <Progress value={rate} className="h-2" />
           </div>
@@ -241,7 +241,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
                       ${hasSess && !isFuture ? STATUS_BG[status] || 'bg-muted/30' : 'bg-transparent'}
                     `}
                   >
-                    <span className={`font-medium text-[11px] leading-none ${isToday ? 'text-brand-400' : ''}`}>{day}</span>
+                    <span className={`font-medium text-[11px] leading-none ${isToday ? 'text-brand-text' : ''}`}>{day}</span>
                     {hasSess && !isFuture && (
                       <div className={`w-1 h-1 rounded-full mt-0.5 ${STATUS_COLOR[status]}`} />
                     )}

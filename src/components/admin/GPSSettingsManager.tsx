@@ -163,7 +163,7 @@ export function GPSSettingsManager() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <MapPin size={18} className="text-brand-400" />
+          <MapPin size={18} className="text-brand-text" />
           ตั้งค่าพื้นที่เช็คชื่อ GPS
         </CardTitle>
         <CardDescription>
@@ -292,7 +292,7 @@ export function GPSSettingsManager() {
 
         {settings && (
           <Alert className="bg-brand-500/10 border-brand-500/30">
-            <MapPin size={16} className="text-brand-400" />
+            <MapPin size={16} className="text-brand-text" />
             <AlertDescription className="text-sm">
               ตั้งค่าปัจจุบัน: <span className="font-medium">{settings.name}</span>
               {' '} · รัศมี {settings.allowed_radius} เมตร

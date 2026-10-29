@@ -254,7 +254,7 @@ export default function StudentsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 size={32} className="animate-spin text-brand-400" />
+        <Loader2 size={32} className="animate-spin text-brand-text" />
       </div>
     );
   }
@@ -265,7 +265,7 @@ export default function StudentsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
-            <Users size={20} className="text-brand-400" /> ข้อมูลนักเรียน
+            <Users size={20} className="text-brand-text" /> ข้อมูลนักเรียน
           </h1>
           <p className="text-sm text-muted-foreground">{students.length} คน (กำลังเรียนอยู่)</p>
         </div>
@@ -276,7 +276,7 @@ export default function StudentsPage() {
           {isAdmin && (
             <Button
               variant="outline" size="sm"
-              className="gap-1.5 text-xs border-brand-500/30 text-brand-400 hover:bg-brand-500/10"
+              className="gap-1.5 text-xs border-brand-500/30 text-brand-text hover:bg-brand-500/10"
               onClick={() => setPromoteDialog(true)}
             >
               <GraduationCap size={13} /> เลื่อนชั้นปีการศึกษา
@@ -360,7 +360,7 @@ export default function StudentsPage() {
                           <div className="flex items-center gap-2.5">
                             <Avatar className="w-8 h-8 shrink-0">
                               <AvatarImage src={s.profile_picture_url || ''} />
-                              <AvatarFallback className="text-xs bg-brand-500/20 text-brand-400">
+                              <AvatarFallback className="text-xs bg-brand-500/20 text-brand-text">
                                 {getAvatarFallback(s.full_name)}
                               </AvatarFallback>
                             </Avatar>
@@ -396,7 +396,7 @@ export default function StudentsPage() {
                           </div>
                         </td>
                         <td className="p-3 text-center hidden lg:table-cell">
-                          <span className={`text-xs font-medium ${s.is_in_club ? 'text-green-400' : 'text-muted-foreground'}`}>
+                          <span className={`text-xs font-medium ${s.is_in_club ? 'text-success' : 'text-muted-foreground'}`}>
                             {s.is_in_club ? '✓ ใช่' : '✗ ไม่'}
                           </span>
                         </td>
@@ -472,7 +472,7 @@ export default function StudentsPage() {
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Edit2 size={16} className="text-brand-400" />
+              <Edit2 size={16} className="text-brand-text" />
               แก้ไขข้อมูลนักเรียน
             </DialogTitle>
             <DialogDescription>{editDialog?.email}</DialogDescription>
@@ -568,7 +568,7 @@ export default function StudentsPage() {
                 </SelectContent>
               </Select>
               {editForm.section_id && filteredInstrumentsFor(editForm.section_id).length === 0 && (
-                <p className="text-[11px] text-yellow-500">ไม่มีเครื่องดนตรีใน Section นี้</p>
+                <p className="text-[11px] text-warning">ไม่มีเครื่องดนตรีใน Section นี้</p>
               )}
             </div>
 
@@ -615,7 +615,7 @@ export default function StudentsPage() {
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plus size={16} className="text-brand-400" /> เพิ่มนักเรียนใหม่
+              <Plus size={16} className="text-brand-text" /> เพิ่มนักเรียนใหม่
             </DialogTitle>
             <DialogDescription>กรอกข้อมูลนักเรียนที่ต้องการเพิ่มเข้าวง</DialogDescription>
           </DialogHeader>
@@ -773,22 +773,22 @@ export default function StudentsPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle size={16} className="text-yellow-400" /> ยืนยันเลื่อนชั้น
+              <AlertTriangle size={16} className="text-warning" /> ยืนยันเลื่อนชั้น
             </DialogTitle>
           </DialogHeader>
           <div className="py-2 space-y-3">
             <p className="text-sm text-muted-foreground">ระบบจะทำการ:</p>
             <ul className="text-sm space-y-1.5 pl-4">
               <li className="flex items-start gap-2">
-                <span className="text-brand-400 mt-0.5">→</span>
+                <span className="text-brand-text mt-0.5">→</span>
                 <span>นักเรียน ม.1–5 จะถูกเลื่อนขึ้น 1 ชั้น</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-red-400 mt-0.5">→</span>
+                <span className="text-danger mt-0.5">→</span>
                 <span>นักเรียน ม.6 จะถูกย้ายไปส่วน "จบการศึกษา"</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-400 mt-0.5">✓</span>
+                <span className="text-success mt-0.5">✓</span>
                 <span>ข้อมูลการเช็คชื่อยังคงอยู่ครบถ้วน</span>
               </li>
             </ul>

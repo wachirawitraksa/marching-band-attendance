@@ -82,7 +82,7 @@ export function SemesterManager() {
     }
   };
 
-  if (loading) return <div className="flex justify-center py-4"><Loader2 size={20} className="animate-spin text-brand-400" /></div>;
+  if (loading) return <div className="flex justify-center py-4"><Loader2 size={20} className="animate-spin text-brand-text" /></div>;
 
   return (
     <div className="space-y-4">
@@ -90,11 +90,11 @@ export function SemesterManager() {
       {currentTerm ? (
         <div className="flex items-center gap-3 p-4 rounded-xl bg-brand-500/10 border border-brand-500/30">
           <div className="w-10 h-10 rounded-lg bg-brand-500/20 flex items-center justify-center shrink-0">
-            <BookOpen size={18} className="text-brand-400" />
+            <BookOpen size={18} className="text-brand-text" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-brand-400/70 font-medium">ภาคเรียนปัจจุบัน</p>
-            <p className="font-bold text-brand-400">{currentTerm.label}</p>
+            <p className="text-xs text-brand-text/70 font-medium">ภาคเรียนปัจจุบัน</p>
+            <p className="font-bold text-brand-text">{currentTerm.label}</p>
             <p className="text-xs text-muted-foreground">
               เริ่ม {formatThaiDate(currentTerm.start_date)}
               {currentTerm.end_date && ` ถึง ${formatThaiDate(currentTerm.end_date)}`}
@@ -172,7 +172,7 @@ export function SemesterManager() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Calendar size={16} className="text-brand-400" /> สร้างภาคเรียนใหม่
+              <Calendar size={16} className="text-brand-text" /> สร้างภาคเรียนใหม่
             </DialogTitle>
             <DialogDescription>
               กรอกข้อมูลภาคเรียนที่ต้องการสร้าง
@@ -230,7 +230,7 @@ export function SemesterManager() {
             </div>
             {newYear && newSemester && (
               <div className="px-3 py-2 bg-brand-500/10 border border-brand-500/20 rounded-lg">
-                <p className="text-xs text-brand-400 font-medium">
+                <p className="text-xs text-brand-text font-medium">
                   ตัวอย่าง: ภาคเรียนที่ {newSemester}/{newYear}
                 </p>
               </div>
@@ -253,7 +253,7 @@ export function SemesterManager() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle size={16} className="text-yellow-400" /> ยืนยันการเปลี่ยนภาคเรียน
+              <AlertTriangle size={16} className="text-warning" /> ยืนยันการเปลี่ยนภาคเรียน
             </DialogTitle>
             <DialogDescription>
               การเปลี่ยนภาคเรียนจะส่งผลต่อการแสดงข้อมูลในระบบ
@@ -267,7 +267,7 @@ export function SemesterManager() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">ไป:</span>
-                <span className="font-bold text-brand-400">{switchDialog?.label}</span>
+                <span className="font-bold text-brand-text">{switchDialog?.label}</span>
               </div>
             </div>
             <Alert variant="warning">

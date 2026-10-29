@@ -155,7 +155,7 @@ export default function AttendancePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="animate-spin text-brand-400" size={32} />
+        <Loader2 className="animate-spin text-brand-text" size={32} />
       </div>
     );
   }
@@ -252,15 +252,15 @@ export default function AttendancePage() {
                 <div className="space-y-3">
                   {myRecord ? (
                     <div className={`flex items-center gap-3 p-3 rounded-lg border ${
-                      myRecord.status === 'present' ? 'border-green-500/30 bg-green-500/5' :
-                      myRecord.status === 'late' ? 'border-yellow-500/30 bg-yellow-500/5' :
-                      myRecord.status === 'excused' ? 'border-blue-500/30 bg-blue-500/5' :
-                      'border-red-500/30 bg-red-500/5'
+                      myRecord.status === 'present' ? 'border-success/30 bg-success/5' :
+                      myRecord.status === 'late' ? 'border-warning/30 bg-warning/5' :
+                      myRecord.status === 'excused' ? 'border-info/30 bg-info/5' :
+                      'border-danger/30 bg-danger/5'
                     }`}>
-                      {myRecord.status === 'present' ? <CheckCircle2 size={20} className="text-green-400" /> :
-                       myRecord.status === 'late' ? <AlertCircle size={20} className="text-yellow-400" /> :
-                       myRecord.status === 'excused' ? <FileText size={20} className="text-blue-400" /> :
-                       <XCircle size={20} className="text-red-400" />}
+                      {myRecord.status === 'present' ? <CheckCircle2 size={20} className="text-success" /> :
+                       myRecord.status === 'late' ? <AlertCircle size={20} className="text-warning" /> :
+                       myRecord.status === 'excused' ? <FileText size={20} className="text-info" /> :
+                       <XCircle size={20} className="text-danger" />}
                       <div>
                         <p className="text-sm font-medium">{ATTENDANCE_STATUS_LABELS[myRecord.status]}</p>
                         {myRecord.check_in_time && (
@@ -423,13 +423,13 @@ function TeacherAttendanceView({ sessionId, onOverride }: { sessionId: string; o
   const present = records.filter(r => r.status === 'present' || r.status === 'late').length;
   const total = allStudents.length;
 
-  if (loading) return <div className="flex justify-center py-4"><Loader2 size={20} className="animate-spin text-brand-400" /></div>;
+  if (loading) return <div className="flex justify-center py-4"><Loader2 size={20} className="animate-spin text-brand-text" /></div>;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">มาแล้ว</span>
-        <span className="font-semibold text-brand-400">{present} / {total} คน</span>
+        <span className="font-semibold text-brand-text">{present} / {total} คน</span>
       </div>
 
       <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
@@ -440,7 +440,7 @@ function TeacherAttendanceView({ sessionId, onOverride }: { sessionId: string; o
               <div className="flex items-center gap-2.5">
                 <Avatar className="w-7 h-7">
                   <AvatarImage src={student.profile_picture_url || ''} />
-                  <AvatarFallback className="text-[10px] bg-brand-500/20 text-brand-400">
+                  <AvatarFallback className="text-[10px] bg-brand-500/20 text-brand-text">
                     {getAvatarFallback(student.full_name)}
                   </AvatarFallback>
                 </Avatar>

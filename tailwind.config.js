@@ -43,6 +43,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // semantic status colors — values switch per theme in index.css
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
+        danger: "hsl(var(--danger))",
+        info: "hsl(var(--info))",
+        holiday: "hsl(var(--holiday))",
+        "brand-text": "hsl(var(--brand-text))",
         // custom brand color replacing amber/gold
         brand: {
           DEFAULT: "#17636A",

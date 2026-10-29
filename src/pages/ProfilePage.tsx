@@ -273,7 +273,7 @@ export default function ProfilePage() {
             <div className="relative shrink-0">
               <Avatar className="w-24 h-24">
                 <AvatarImage src={profile.profile_picture_url || ''} />
-                <AvatarFallback className="text-2xl bg-brand-500/20 text-brand-400 font-bold">
+                <AvatarFallback className="text-2xl bg-brand-500/20 text-brand-text font-bold">
                   {getAvatarFallback(profile.full_name)}
                 </AvatarFallback>
               </Avatar>
@@ -311,16 +311,16 @@ export default function ProfilePage() {
               </div>
               <div className="space-y-0.5">
                 <p className="text-xs text-muted-foreground flex items-center justify-center sm:justify-start gap-1.5">
-                  <Mail size={11} className="text-brand-400/70" /> {profile.email}
+                  <Mail size={11} className="text-brand-text/70" /> {profile.email}
                 </p>
                 {profile.instrument && (
                   <p className="text-xs text-muted-foreground flex items-center justify-center sm:justify-start gap-1.5">
-                    <Music size={11} className="text-brand-400/70" /> {profile.instrument.name}
+                    <Music size={11} className="text-brand-text/70" /> {profile.instrument.name}
                   </p>
                 )}
                 {profile.student_id && (
                   <p className="text-xs text-muted-foreground flex items-center justify-center sm:justify-start gap-1.5">
-                    <Shield size={11} className="text-brand-400/70" /> รหัส {profile.student_id}
+                    <Shield size={11} className="text-brand-text/70" /> รหัส {profile.student_id}
                   </p>
                 )}
               </div>
@@ -333,7 +333,7 @@ export default function ProfilePage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <User size={15} className="text-brand-400" /> แก้ไขโปรไฟล์
+            <User size={15} className="text-brand-text" /> แก้ไขโปรไฟล์
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -366,7 +366,7 @@ export default function ProfilePage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Lock size={15} className="text-brand-400" /> เปลี่ยนรหัสผ่าน
+            <Lock size={15} className="text-brand-text" /> เปลี่ยนรหัสผ่าน
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -424,7 +424,7 @@ export default function ProfilePage() {
       <Card className="border-border/50 bg-muted/20">
         <CardContent className="p-4">
           <div className="flex items-start gap-2.5">
-            <Shield size={14} className="text-brand-400/70 mt-0.5 shrink-0" />
+            <Shield size={14} className="text-brand-text/70 mt-0.5 shrink-0" />
             <div className="text-xs text-muted-foreground space-y-0.5 flex-1">
               <p className="font-semibold text-foreground text-sm mb-2">ข้อมูลบัญชี</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
@@ -432,7 +432,7 @@ export default function ProfilePage() {
                 {profile.student_id && (
                   <p>รหัสนักเรียน: <span className="text-foreground">{profile.student_id}</span></p>
                 )}
-                <p>สิทธิ์: <span className="text-brand-400">{ROLE_LABELS[profile.role]}</span></p>
+                <p>สิทธิ์: <span className="text-brand-text">{ROLE_LABELS[profile.role]}</span></p>
                 <p>
                   สมัครเมื่อ:{' '}
                   <span className="text-foreground">

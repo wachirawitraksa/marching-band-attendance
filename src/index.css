@@ -25,6 +25,14 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 104 77% 30%;
     --radius: 0.5rem;
+
+    /* Semantic text/accent colors — each ≥4.5:1 on white and on its own 20% tint */
+    --success: 142 72% 24%;
+    --warning: 32 95% 28%;
+    --danger: 0 72% 42%;
+    --info: 217 80% 40%;
+    --holiday: 24 92% 32%;   /* ช่วงปิดเทอม */
+    --brand-text: 185 66% 25%;
   }
 
   .dark {
@@ -48,6 +56,13 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 104 77% 30%;
+
+    --success: 142 70% 55%;
+    --warning: 45 93% 58%;
+    --danger: 0 85% 70%;
+    --info: 213 90% 68%;
+    --holiday: 27 95% 62%;
+    --brand-text: 185 55% 58%;
   }
 }
 

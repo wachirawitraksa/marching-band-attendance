@@ -278,13 +278,13 @@ export default function SchedulePage() {
           {isTeacher && (
             <>
               <Button variant="outline" size="sm"
-                className="gap-1.5 border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
+                className="gap-1.5 border-holiday/30 text-holiday hover:bg-holiday/10"
                 onClick={() => { setRangeForm({ start_date:'', end_date:'', label:'' }); setRangeError(''); setRangeDialog(true); }}
               >
                 <BookX size={13} /> ปิดเทอม
               </Button>
               <Button variant="outline" size="sm"
-                className="gap-1.5 border-red-500/30 text-red-400 hover:bg-red-500/10"
+                className="gap-1.5 border-danger/30 text-danger hover:bg-danger/10"
                 onClick={() => { setHolidayForm({ date:'', description:'' }); setHolidayError(''); setHolidayDialog(true); }}
               >
                 <CalendarX size={13} /> วันหยุด
@@ -301,9 +301,9 @@ export default function SchedulePage() {
 
       {/* Banner ปิดเทอม */}
       {currentRange && (
-        <Alert className="border-orange-500/40 bg-orange-500/10">
-          <BookX size={16} className="text-orange-400" />
-          <AlertDescription className="text-orange-300">
+        <Alert className="border-holiday/40 bg-holiday/10">
+          <BookX size={16} className="text-holiday" />
+          <AlertDescription className="text-holiday">
             <span className="font-semibold">{currentRange.label}</span>
             {' '}— ปิดถึง {formatThaiDate(currentRange.end_date)} ไม่มีรอบซ้อมปกติ
           </AlertDescription>
@@ -322,7 +322,7 @@ export default function SchedulePage() {
           <TabsTrigger value="term" className="text-xs">
             ปิดเทอม
             {ranges.length > 0 && (
-              <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0 h-4 border-orange-500/40 text-orange-400">{ranges.length}</Badge>
+              <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0 h-4 border-holiday/40 text-holiday">{ranges.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="holidays" className="text-xs">
@@ -338,7 +338,7 @@ export default function SchedulePage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Calendar size={15} className="text-brand-400" /> ตารางซ้อมประจำสัปดาห์
+                <Calendar size={15} className="text-brand-text" /> ตารางซ้อมประจำสัปดาห์
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2.5">
@@ -346,14 +346,14 @@ export default function SchedulePage() {
                 <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border/50">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-brand-500/15 flex items-center justify-center">
-                      <Clock size={14} className="text-brand-400" />
+                      <Clock size={14} className="text-brand-text" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">{s.label}</p>
                       <p className="text-xs text-muted-foreground">วัน{s.day}</p>
                     </div>
                   </div>
-                  <p className="text-sm text-brand-400 font-medium">{s.time}</p>
+                  <p className="text-sm text-brand-text font-medium">{s.time}</p>
                 </div>
               ))}
               <p className="text-xs text-muted-foreground pt-1">
@@ -368,13 +368,13 @@ export default function SchedulePage() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Clock size={15} className="text-brand-400" /> รอบซ้อมที่กำลังจะมาถึง
+                <Clock size={15} className="text-brand-text" /> รอบซ้อมที่กำลังจะมาถึง
               </CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 size={24} className="animate-spin text-brand-400" />
+                  <Loader2 size={24} className="animate-spin text-brand-text" />
                 </div>
               ) : sessions.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">ไม่มีรอบซ้อมที่กำลังจะมาถึง</p>
@@ -394,7 +394,7 @@ export default function SchedulePage() {
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-center shrink-0 ${
                             isToday    ? 'bg-brand-500 text-white' :
-                            isTomorrow ? 'bg-brand-500/20 text-brand-400' :
+                            isTomorrow ? 'bg-brand-500/20 text-brand-text' :
                             'bg-muted'
                           }`}>
                             <span className="text-[10px] leading-none">{getDayOfWeekThai(dateObj)}</span>
@@ -406,9 +406,9 @@ export default function SchedulePage() {
                                 {session.description || SESSION_TYPE_LABELS[session.session_type]}
                               </p>
                               {isToday    && <Badge variant="gold" className="text-[9px]">วันนี้</Badge>}
-                              {isTomorrow && <Badge variant="outline" className="text-[9px] border-brand-500/40 text-brand-400">พรุ่งนี้</Badge>}
+                              {isTomorrow && <Badge variant="outline" className="text-[9px] border-brand-500/40 text-brand-text">พรุ่งนี้</Badge>}
                               {session.is_override && <Badge variant="info" className="text-[9px]">พิเศษ</Badge>}
-                              {isHolRange && <Badge className="text-[9px] bg-orange-500/20 text-orange-400 border-orange-500/30">ช่วงปิดเทอม</Badge>}
+                              {isHolRange && <Badge className="text-[9px] bg-holiday/20 text-holiday border-holiday/30">ช่วงปิดเทอม</Badge>}
                             </div>
                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                               <Clock size={10} />
@@ -418,7 +418,7 @@ export default function SchedulePage() {
                         </div>
                         {isTeacher && (
                           <Button size="sm" variant="ghost"
-                            className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10 shrink-0"
+                            className="h-8 w-8 p-0 text-danger hover:text-danger hover:bg-danger/10 shrink-0"
                             onClick={() => setDeleteSession(session)} disabled={!!deleting}
                           >
                             {deleting === session.id
@@ -441,11 +441,11 @@ export default function SchedulePage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <BookX size={15} className="text-orange-400" /> ช่วงปิดเทอม
+                  <BookX size={15} className="text-holiday" /> ช่วงปิดเทอม
                 </CardTitle>
                 {isTeacher && (
                   <Button size="sm" variant="outline"
-                    className="gap-1.5 text-xs border-orange-500/30 text-orange-400 hover:bg-orange-500/10 h-7"
+                    className="gap-1.5 text-xs border-holiday/30 text-holiday hover:bg-holiday/10 h-7"
                     onClick={() => { setRangeForm({ start_date:'', end_date:'', label:'' }); setRangeError(''); setRangeDialog(true); }}
                   >
                     <Plus size={12} /> เพิ่ม
@@ -464,22 +464,22 @@ export default function SchedulePage() {
                     const days     = countDays(r.start_date, r.end_date);
                     return (
                       <div key={r.id} className={`p-3 rounded-lg border transition-colors ${
-                        isActive ? 'border-orange-500/40 bg-orange-500/8' :
+                        isActive ? 'border-holiday/40 bg-holiday/8' :
                         isPast   ? 'border-border/30 bg-muted/10 opacity-50' :
-                        'border-orange-500/20 bg-orange-500/5'
+                        'border-holiday/20 bg-holiday/5'
                       }`}>
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2.5 flex-1 min-w-0">
                             <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                              isActive ? 'bg-orange-500/25' : 'bg-muted'
+                              isActive ? 'bg-holiday/25' : 'bg-muted'
                             }`}>
-                              <BookX size={15} className={isActive ? 'text-orange-400' : 'text-muted-foreground'} />
+                              <BookX size={15} className={isActive ? 'text-holiday' : 'text-muted-foreground'} />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="text-sm font-semibold">{r.label}</p>
                                 {isActive && (
-                                  <Badge className="text-[9px] bg-orange-500/20 text-orange-400 border-orange-500/30 animate-pulse">
+                                  <Badge className="text-[9px] bg-holiday/20 text-holiday border-holiday/30 animate-pulse">
                                     กำลังปิดเทอม
                                   </Badge>
                                 )}
@@ -497,7 +497,7 @@ export default function SchedulePage() {
                           </div>
                           {isTeacher && !isPast && (
                             <Button size="sm" variant="ghost"
-                              className="h-7 w-7 p-0 text-red-400 hover:bg-red-500/10 shrink-0"
+                              className="h-7 w-7 p-0 text-danger hover:bg-danger/10 shrink-0"
                               aria-label={`ลบ ${r.label}`}
                               onClick={() => setDeleteRange(r)}
                             >
@@ -520,11 +520,11 @@ export default function SchedulePage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Ban size={15} className="text-red-400" /> วันหยุด / ไม่มีซ้อม
+                  <Ban size={15} className="text-danger" /> วันหยุด / ไม่มีซ้อม
                 </CardTitle>
                 {isTeacher && (
                   <Button size="sm" variant="outline"
-                    className="gap-1.5 text-xs border-red-500/30 text-red-400 hover:bg-red-500/10 h-7"
+                    className="gap-1.5 text-xs border-danger/30 text-danger hover:bg-danger/10 h-7"
                     onClick={() => { setHolidayForm({ date:'', description:'' }); setHolidayError(''); setHolidayDialog(true); }}
                   >
                     <Plus size={12} /> เพิ่ม
@@ -541,13 +541,13 @@ export default function SchedulePage() {
                     const isPast = h.date < todayStr;
                     return (
                       <div key={h.id} className={`flex items-center justify-between p-3 rounded-lg border ${
-                        isPast ? 'border-border/30 bg-muted/10 opacity-50' : 'border-red-500/20 bg-red-500/5'
+                        isPast ? 'border-border/30 bg-muted/10 opacity-50' : 'border-danger/20 bg-danger/5'
                       }`}>
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-center shrink-0 ${
-                            isPast ? 'bg-muted' : 'bg-red-500/20'
+                            isPast ? 'bg-muted' : 'bg-danger/20'
                           }`}>
-                            <CalendarX size={14} className={isPast ? 'text-muted-foreground' : 'text-red-400'} />
+                            <CalendarX size={14} className={isPast ? 'text-muted-foreground' : 'text-danger'} />
                           </div>
                           <div>
                             <p className="text-sm font-medium">{h.description}</p>
@@ -559,7 +559,7 @@ export default function SchedulePage() {
                         </div>
                         {isTeacher && !isPast && (
                           <Button size="sm" variant="ghost"
-                            className="h-8 w-8 p-0 text-red-400 hover:bg-red-500/10 shrink-0"
+                            className="h-8 w-8 p-0 text-danger hover:bg-danger/10 shrink-0"
                             aria-label="ลบวันหยุด"
                             onClick={() => handleDeleteHoliday(h.id)}
                           >
@@ -581,7 +581,7 @@ export default function SchedulePage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plus size={16} className="text-brand-400" /> เพิ่มรอบซ้อมพิเศษ
+              <Plus size={16} className="text-brand-text" /> เพิ่มรอบซ้อมพิเศษ
             </DialogTitle>
             <DialogDescription>นอกเหนือจากตารางซ้อมปกติ</DialogDescription>
           </DialogHeader>
@@ -629,7 +629,7 @@ export default function SchedulePage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <CalendarX size={16} className="text-red-400" /> เพิ่มวันหยุด
+              <CalendarX size={16} className="text-danger" /> เพิ่มวันหยุด
             </DialogTitle>
             <DialogDescription>รอบซ้อมในวันนั้นจะถูกลบออกอัตโนมัติ</DialogDescription>
           </DialogHeader>
@@ -650,8 +650,8 @@ export default function SchedulePage() {
               />
             </div>
             {holidayForm.date && (
-              <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <p className="text-xs text-red-400">
+              <div className="px-3 py-2 bg-danger/10 border border-danger/20 rounded-lg">
+                <p className="text-xs text-danger">
                   วัน{getDayOfWeekThai(holidayForm.date + 'T12:00:00Z')}ที่ {formatThaiDate(holidayForm.date)} จะไม่มีรอบซ้อม
                 </p>
               </div>
@@ -672,7 +672,7 @@ export default function SchedulePage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <BookX size={16} className="text-orange-400" /> เพิ่มช่วงปิดเทอม
+              <BookX size={16} className="text-holiday" /> เพิ่มช่วงปิดเทอม
             </DialogTitle>
             <DialogDescription>
               รอบซ้อมปกติในช่วงนั้นจะถูกลบออก ยังสามารถเพิ่มซ้อมพิเศษได้
@@ -701,11 +701,11 @@ export default function SchedulePage() {
               />
             </div>
             {rangeForm.start_date && rangeForm.end_date && rangeForm.end_date >= rangeForm.start_date && (
-              <div className="px-3 py-2 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                <p className="text-xs text-orange-300 font-medium">
+              <div className="px-3 py-2 bg-holiday/10 border border-holiday/20 rounded-lg">
+                <p className="text-xs text-holiday font-medium">
                   {formatThaiDate(rangeForm.start_date)} – {formatThaiDate(rangeForm.end_date)}
                 </p>
-                <p className="text-xs text-orange-400/70 mt-0.5">
+                <p className="text-xs text-holiday/70 mt-0.5">
                   รวม {countDays(rangeForm.start_date, rangeForm.end_date)} วัน — รอบซ้อมปกติในช่วงนี้จะถูกลบออก
                 </p>
               </div>
@@ -726,7 +726,7 @@ export default function SchedulePage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle size={16} className="text-yellow-400" /> ยืนยันการลบรอบซ้อม
+              <AlertTriangle size={16} className="text-warning" /> ยืนยันการลบรอบซ้อม
             </DialogTitle>
           </DialogHeader>
           <div className="py-2 space-y-2">
@@ -759,7 +759,7 @@ export default function SchedulePage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle size={16} className="text-yellow-400" /> ยืนยันการลบช่วงปิดเทอม
+              <AlertTriangle size={16} className="text-warning" /> ยืนยันการลบช่วงปิดเทอม
             </DialogTitle>
           </DialogHeader>
           <div className="py-2 space-y-2">
@@ -771,9 +771,9 @@ export default function SchedulePage() {
                 </p>
               </div>
             )}
-            <Alert className="border-orange-500/30 bg-orange-500/10">
-              <AlertTriangle size={13} className="text-orange-400" />
-              <AlertDescription className="text-xs text-orange-300">
+            <Alert className="border-holiday/30 bg-holiday/10">
+              <AlertTriangle size={13} className="text-holiday" />
+              <AlertDescription className="text-xs text-holiday">
                 รอบซ้อมในช่วงนี้จะ<span className="font-semibold">ไม่</span>ถูกสร้างคืน — ต้องเพิ่มเองถ้าต้องการ
               </AlertDescription>
             </Alert>
