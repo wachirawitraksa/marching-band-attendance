@@ -18,10 +18,11 @@ import { useStudents } from '@/hooks/useSupabaseQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import {
   formatThaiDate, formatTime, getDayOfWeekThai, isWithinAttendanceWindow, isPastAttendanceWindow, getAvatarFallback, getTodayBangkok
 } from '@/lib/utils';
-import { AttendanceRecord, Profile, SessionType, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
+import { AttendanceRecord, AttendanceStatus, Profile, SessionType, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { QRCodeSVG } from 'qrcode.react';
 import { CheckInSuccessAnimation } from '@/components/CheckInSuccessAnimation';
@@ -51,8 +52,14 @@ export default function AttendancePage() {
   }, [today]);
 
   // Teacher override
-  const [overrideDialog, setOverrideDialog] = useState<{ open: boolean; studentId: string; sessionId: string; studentName: string } | null>(null);
-  const [overrideStatus, setOverrideStatus] = useState<'present' | 'absent' | 'late' | 'excused'>('present');
+  // current = record ตอนเปิด dialog (null = ยังไม่เช็ค) — ใช้ตั้งค่าเริ่มต้น, แสดงสถานะเดิม และย้อนกลับ
+  const [overrideDialog, setOverrideDialog] = useState<{ open: boolean; studentId: string; sessionId: string; studentName: string; current: AttendanceRecord | null } | null>(null);
+  const [overrideStatus, setOverrideStatus] = useState<AttendanceStatus | null>(null);
+  const openOverride = (sessionId: string, studentId: string, studentName: string, current: AttendanceRecord | null) => {
+    setOverrideDialog({ open: true, studentId, sessionId, studentName, current });
+    setOverrideStatus(current?.status ?? null);
+    setOverrideNote(current?.override_note ?? '');
+  };
   const [overrideNote, setOverrideNote] = useState('');
   const [savingOverride, setSavingOverride] = useState(false);
 
@@ -121,23 +128,57 @@ export default function AttendancePage() {
     }
   };
 
+  // ย้อนการแก้ไขล่าสุด: คืนค่าแถวเดิม หรือลบแถวทิ้งถ้าก่อนหน้านี้ยังไม่เคยเช็ค
+  const undoOverride = async (sessionId: string, studentId: string, studentName: string, previous: AttendanceRecord | null) => {
+    const query = supabase.from('attendance_records');
+    const { error } = previous
+      ? await query.update({
+          status: previous.status,
+          check_in_time: previous.check_in_time,
+          teacher_override: previous.teacher_override,
+          override_by: previous.override_by,
+          override_note: previous.override_note,
+        }).eq('session_id', sessionId).eq('student_id', studentId)
+      : await query.delete().eq('session_id', sessionId).eq('student_id', studentId);
+    if (error) {
+      toast({ variant: 'destructive', title: 'ย้อนกลับไม่สำเร็จ', description: getErrorMessage(error) });
+      return;
+    }
+    toast({ title: `คืนสถานะของ ${studentName} แล้ว` });
+    queryClient.invalidateQueries({ queryKey: ['attendance'] });
+  };
+
   const handleTeacherOverride = async () => {
-    if (!overrideDialog || !profile) return;
+    if (!overrideDialog || !profile || !overrideStatus) return;
+    const { sessionId, studentId, studentName, current } = overrideDialog;
+    const arrived = overrideStatus === 'present' || overrideStatus === 'late';
     setSavingOverride(true);
     try {
       const { error } = await supabase
         .from('attendance_records')
         .upsert({
-          session_id: overrideDialog.sessionId,
-          student_id: overrideDialog.studentId,
+          session_id: sessionId,
+          student_id: studentId,
           status: overrideStatus,
           teacher_override: true,
           override_by: profile.id,
           override_note: overrideNote,
-          check_in_time: overrideStatus === 'present' ? new Date().toISOString() : null,
+          // เก็บเวลาเข้าจริงไว้ถ้ามี (เช่น เช็คด้วย GPS แล้วครูเปลี่ยนเป็นสาย) — ไม่เขียนทับด้วยเวลาที่ครูกดบันทึก
+          check_in_time: arrived
+            ? (current?.check_in_time ?? (overrideStatus === 'present' ? new Date().toISOString() : null))
+            : null,
         }, { onConflict: 'session_id,student_id' });
       if (error) throw error;
-      toast({ variant: 'success', title: 'บันทึกแล้ว' });
+      const from = current ? ATTENDANCE_STATUS_LABELS[current.status] : 'ยังไม่เช็ค';
+      toast({
+        variant: 'success',
+        title: `${studentName}: ${from} → ${ATTENDANCE_STATUS_LABELS[overrideStatus]}`,
+        action: (
+          <ToastAction altText="ย้อนกลับการแก้ไขสถานะ" onClick={() => undoOverride(sessionId, studentId, studentName, current)}>
+            ย้อนกลับ
+          </ToastAction>
+        ),
+      });
       setOverrideDialog(null);
       setOverrideNote('');
       // sync กับ Dashboard/Reports ที่ cache สถิติเดียวกันไว้
@@ -314,9 +355,7 @@ export default function AttendancePage() {
                 <TeacherAttendanceView
                   sessionId={session.id}
                   defaultExpanded={isOpen || sessions.length === 1}
-                  onOverride={(studentId, studentName) =>
-                    setOverrideDialog({ open: true, studentId, sessionId: session.id, studentName })
-                  }
+                  onOverride={(studentId, studentName, current) => openOverride(session.id, studentId, studentName, current)}
                 />
               )}
             </CardContent>
@@ -378,17 +417,30 @@ export default function AttendancePage() {
               <DialogTitle>แก้ไขการเช็คชื่อ</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
-              <p className="text-sm">นักเรียน: <span className="font-semibold">{overrideDialog.studentName}</span></p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <p className="text-sm">นักเรียน: <span className="font-semibold">{overrideDialog.studentName}</span></p>
+                <p className="text-sm text-muted-foreground">
+                  สถานะปัจจุบัน: <span className="font-medium text-foreground">
+                    {overrideDialog.current ? ATTENDANCE_STATUS_LABELS[overrideDialog.current.status] : 'ยังไม่เช็ค'}
+                  </span>
+                  {overrideDialog.current?.check_in_time && (
+                    <> · เข้า {new Date(overrideDialog.current.check_in_time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</>
+                  )}
+                </p>
+              </div>
+              <div role="radiogroup" aria-label="สถานะใหม่" className="grid grid-cols-2 gap-2">
                 {(['present', 'absent', 'late', 'excused'] as const).map(s => (
                   <Button
                     key={s}
+                    role="radio"
+                    aria-checked={overrideStatus === s}
                     variant={overrideStatus === s ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setOverrideStatus(s)}
                     className={overrideStatus === s ? 'bg-brand-500 text-white hover:bg-brand-400' : ''}
                   >
                     {ATTENDANCE_STATUS_LABELS[s]}
+                    {overrideDialog.current?.status === s && <span className="text-xs opacity-80">(เดิม)</span>}
                   </Button>
                 ))}
               </div>
@@ -402,7 +454,14 @@ export default function AttendancePage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOverrideDialog(null)}>ยกเลิก</Button>
-              <Button onClick={handleTeacherOverride} disabled={savingOverride} className="bg-brand-500 hover:bg-brand-400 text-white">
+              <Button
+                onClick={handleTeacherOverride}
+                disabled={
+                  savingOverride || !overrideStatus ||
+                  (overrideStatus === overrideDialog.current?.status && overrideNote === (overrideDialog.current?.override_note ?? ''))
+                }
+                className="bg-brand-500 hover:bg-brand-400 text-white"
+              >
                 {savingOverride ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
                 บันทึก
               </Button>
@@ -418,7 +477,7 @@ export default function AttendancePage() {
 
 // รายชื่อไม่อยู่ในกล่อง scroll ซ้อน (เลื่อนยากบนมือถือ) — แสดงต่อกับหน้าเลย แล้วพับ/กางได้ต่อรอบ
 // กางไว้ก่อนเฉพาะรอบที่กำลังเปิดเช็คชื่อ (หรือวันที่มีรอบเดียว)
-function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { sessionId: string; onOverride: (id: string, name: string) => void; defaultExpanded: boolean }) {
+function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { sessionId: string; onOverride: (id: string, name: string, current: AttendanceRecord | null) => void; defaultExpanded: boolean }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const listId = `attendance-list-${sessionId}`;
   const { records, loading: recordsLoading } = useAllAttendance(sessionId);
@@ -474,7 +533,7 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
                 <Button
                   size="icon-sm" variant="ghost"
                   aria-label={`แก้ไขสถานะของ ${student.full_name}`}
-                  onClick={() => onOverride(student.id, student.full_name)}
+                  onClick={() => onOverride(student.id, student.full_name, record ?? null)}
                 >
                   <UserCheck size={13} />
                 </Button>

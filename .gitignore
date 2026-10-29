@@ -7,3 +7,5 @@ dist-ssr
 .env.production
 .DS_Store
 *.log
+
+critique/
