@@ -1,8 +1,8 @@
 import { getErrorMessage } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   MapPin, QrCode, Clock, CheckCircle2, XCircle, AlertCircle,
-  Loader2, FileText, RefreshCw, Info, UserCheck, ChevronDown
+  Loader2, FileText, RefreshCw, Info, UserCheck, ChevronDown, Search
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import {
   useMyLeaveRequests, useSessionLeaveRequests, submitLeaveRequest, cancelLeaveRequest, decideLeaveRequest,
 } from '@/hooks/useLeaveRequests';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
@@ -476,6 +477,27 @@ export default function AttendancePage() {
   );
 }
 
+// ตัวกรองรายชื่อของครู — 4 กลุ่มตามคำถามที่ครูถามจริง "ใครยังไม่มา / ใครมาแล้ว / ใครลา"
+type RosterFilter = 'all' | 'missing' | 'here' | 'leave';
+const ROSTER_FILTERS: { value: RosterFilter; label: string }[] = [
+  { value: 'all', label: 'ทั้งหมด' },
+  { value: 'missing', label: 'ยังไม่มา' },
+  { value: 'here', label: 'มาแล้ว' },
+  { value: 'leave', label: 'ลา' },
+];
+// ลำดับเริ่มต้น: คนที่ครูต้องจัดการก่อนอยู่บนสุด
+// คำขอลารออนุมัติ → ยังไม่เช็ค → ขาด → สาย → ลา → มา
+function rosterRank(status: AttendanceStatus | null, pendingLeave: boolean): number {
+  if (pendingLeave) return 0;
+  if (!status) return 1;
+  return { absent: 2, late: 3, excused: 4, present: 5 }[status];
+}
+function rosterGroup(status: AttendanceStatus | null, pendingLeave: boolean): Exclude<RosterFilter, 'all'> {
+  if (pendingLeave || status === 'excused') return 'leave';
+  if (status === 'present' || status === 'late') return 'here';
+  return 'missing';
+}
+
 // รายชื่อไม่อยู่ในกล่อง scroll ซ้อน (เลื่อนยากบนมือถือ) — แสดงต่อกับหน้าเลย แล้วพับ/กางได้ต่อรอบ
 // กางไว้ก่อนเฉพาะรอบที่กำลังเปิดเช็คชื่อ (หรือวันที่มีรอบเดียว)
 function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { sessionId: string; onOverride: (id: string, name: string, current: AttendanceRecord | null, leave: LeaveRequest | null) => void; defaultExpanded: boolean }) {
@@ -492,6 +514,28 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
 
   const present = records.filter(r => r.status === 'present' || r.status === 'late').length;
   const total = allStudents.length;
+
+  const [filter, setFilter] = useState<RosterFilter>('all');
+  const [query, setQuery] = useState('');
+  const rows = useMemo(() => allStudents.map(student => {
+    const record = records.find(r => r.student_id === student.id) ?? null;
+    const leave = leaves.find(l => l.student_id === student.id) ?? null;
+    const pendingLeave = leave?.status === 'pending';
+    return { student, record, leave, group: rosterGroup(record?.status ?? null, pendingLeave), rank: rosterRank(record?.status ?? null, pendingLeave) };
+  }), [allStudents, records, leaves]);
+  const counts = useMemo(() => {
+    const c = { all: rows.length, missing: 0, here: 0, leave: 0 };
+    rows.forEach(r => { c[r.group]++; });
+    return c;
+  }, [rows]);
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows
+      .filter(r => filter === 'all' || r.group === filter)
+      .filter(r => !q || [r.student.full_name, r.student.nickname, r.student.student_id, r.student.instrument?.name]
+        .some(v => v?.toLowerCase().includes(q)))
+      .sort((a, b) => a.rank - b.rank || (a.student.nickname || a.student.full_name).localeCompare(b.student.nickname || b.student.full_name, 'th'));
+  }, [rows, filter, query]);
 
   if (loading) return <div className="flex justify-center py-4"><Loader2 size={20} className="animate-spin text-brand-text" /></div>;
 
@@ -514,10 +558,45 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
         </span>
       </button>
 
-      {expanded && <div id={listId} className="space-y-1.5">
-        {allStudents.map(student => {
-          const record = records.find(r => r.student_id === student.id);
-          const leave = leaves.find(l => l.student_id === student.id) ?? null;
+      {expanded && <div id={listId} className="space-y-2">
+        <div className="space-y-2">
+          <div role="radiogroup" aria-label="กรองรายชื่อ" className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1">
+            {ROSTER_FILTERS.map(f => (
+              <button
+                key={f.value}
+                type="button"
+                role="radio"
+                aria-checked={filter === f.value}
+                onClick={() => setFilter(f.value)}
+                className={`min-h-9 coarse:min-h-11 rounded-md px-1 text-xs font-medium transition-colors ${
+                  filter === f.value ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {f.label} <span className="tabular-nums opacity-80">{counts[f.value]}</span>
+              </button>
+            ))}
+          </div>
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Input
+              type="search"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="ค้นหาชื่อ ชื่อเล่น รหัส หรือเครื่องดนตรี"
+              aria-label="ค้นหานักเรียน"
+              className="h-9 pl-8 text-sm"
+            />
+          </div>
+        </div>
+
+        {visible.length === 0 && (
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            {query ? `ไม่พบ "${query}"` : filter === 'missing' ? 'มาครบทุกคนแล้ว' : 'ไม่มีนักเรียนในกลุ่มนี้'}
+          </p>
+        )}
+
+        <div className="space-y-1.5">
+        {visible.map(({ student, record, leave }) => {
           return (
             <div key={student.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/50">
               <div className="flex items-center gap-2.5">
@@ -553,6 +632,7 @@ function TeacherAttendanceView({ sessionId, onOverride, defaultExpanded }: { ses
             </div>
           );
         })}
+        </div>
       </div>}
     </div>
   );
