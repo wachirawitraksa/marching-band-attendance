@@ -130,7 +130,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-gray-800/70 border-gray-700 text-white placeholder:text-gray-500 focus-visible:ring-brand-500/50 h-11 pr-10"
+                  className="bg-gray-800/70 border-gray-700 text-white placeholder:text-gray-500 focus-visible:ring-brand-500/50 h-11 pr-11"
                   autoComplete="current-password"
                   disabled={isLoading}
                 />
@@ -139,7 +139,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                   aria-pressed={showPassword}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                  className="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-gray-400 hover:text-gray-200 transition-colors"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>

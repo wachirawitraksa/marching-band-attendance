@@ -316,19 +316,19 @@ export default function SchedulePage() {
           <TabsTrigger value="upcoming" className="text-xs">
             รอบซ้อม
             {sessions.length > 0 && (
-              <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0 h-4">{sessions.length}</Badge>
+              <Badge variant="outline" className="ml-1 text-xs px-1 py-0 h-5">{sessions.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="term" className="text-xs">
             ปิดเทอม
             {ranges.length > 0 && (
-              <Badge variant="outline" className="ml-1 text-[9px] px-1 py-0 h-4 border-holiday/40 text-holiday">{ranges.length}</Badge>
+              <Badge variant="outline" className="ml-1 text-xs px-1 py-0 h-5 border-holiday/40 text-holiday">{ranges.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="holidays" className="text-xs">
             วันหยุด
             {holidays.length > 0 && (
-              <Badge variant="destructive" className="ml-1 text-[9px] px-1 py-0 h-4">{holidays.length}</Badge>
+              <Badge variant="destructive" className="ml-1 text-xs px-1 py-0 h-5">{holidays.length}</Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -397,7 +397,7 @@ export default function SchedulePage() {
                             isTomorrow ? 'bg-brand-500/20 text-brand-text' :
                             'bg-muted'
                           }`}>
-                            <span className="text-[10px] leading-none">{getDayOfWeekThai(dateObj)}</span>
+                            <span className="text-xs leading-none">{getDayOfWeekThai(dateObj)}</span>
                             <span className="text-base font-bold leading-tight">{dateObj.getUTCDate()}</span>
                           </div>
                           <div>
@@ -405,10 +405,10 @@ export default function SchedulePage() {
                               <p className="text-sm font-medium">
                                 {session.description || SESSION_TYPE_LABELS[session.session_type]}
                               </p>
-                              {isToday    && <Badge variant="gold" className="text-[9px]">วันนี้</Badge>}
-                              {isTomorrow && <Badge variant="outline" className="text-[9px] border-brand-500/40 text-brand-text">พรุ่งนี้</Badge>}
-                              {session.is_override && <Badge variant="info" className="text-[9px]">พิเศษ</Badge>}
-                              {isHolRange && <Badge className="text-[9px] bg-holiday/20 text-holiday border-holiday/30">ช่วงปิดเทอม</Badge>}
+                              {isToday    && <Badge variant="gold" className="text-xs">วันนี้</Badge>}
+                              {isTomorrow && <Badge variant="outline" className="text-xs border-brand-500/40 text-brand-text">พรุ่งนี้</Badge>}
+                              {session.is_override && <Badge variant="info" className="text-xs">พิเศษ</Badge>}
+                              {isHolRange && <Badge className="text-xs bg-holiday/20 text-holiday border-holiday/30">ช่วงปิดเทอม</Badge>}
                             </div>
                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                               <Clock size={10} />
@@ -417,8 +417,8 @@ export default function SchedulePage() {
                           </div>
                         </div>
                         {isTeacher && (
-                          <Button size="sm" variant="ghost"
-                            className="h-8 w-8 p-0 text-danger hover:text-danger hover:bg-danger/10 shrink-0"
+                          <Button size="icon-sm" variant="ghost"
+                            className="text-danger hover:text-danger hover:bg-danger/10 shrink-0"
                             onClick={() => setDeleteSession(session)} disabled={!!deleting}
                           >
                             {deleting === session.id
@@ -479,12 +479,12 @@ export default function SchedulePage() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="text-sm font-semibold">{r.label}</p>
                                 {isActive && (
-                                  <Badge className="text-[9px] bg-holiday/20 text-holiday border-holiday/30 animate-pulse">
+                                  <Badge className="text-xs bg-holiday/20 text-holiday border-holiday/30 animate-pulse">
                                     กำลังปิดเทอม
                                   </Badge>
                                 )}
                                 {isPast && (
-                                  <Badge variant="outline" className="text-[9px] text-muted-foreground">ผ่านไปแล้ว</Badge>
+                                  <Badge variant="outline" className="text-xs text-muted-foreground">ผ่านไปแล้ว</Badge>
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground mt-0.5">
@@ -496,8 +496,8 @@ export default function SchedulePage() {
                             </div>
                           </div>
                           {isTeacher && !isPast && (
-                            <Button size="sm" variant="ghost"
-                              className="h-7 w-7 p-0 text-danger hover:bg-danger/10 shrink-0"
+                            <Button size="icon-sm" variant="ghost"
+                              className="text-danger hover:bg-danger/10 shrink-0"
                               aria-label={`ลบ ${r.label}`}
                               onClick={() => setDeleteRange(r)}
                             >
@@ -558,8 +558,8 @@ export default function SchedulePage() {
                           </div>
                         </div>
                         {isTeacher && !isPast && (
-                          <Button size="sm" variant="ghost"
-                            className="h-8 w-8 p-0 text-danger hover:bg-danger/10 shrink-0"
+                          <Button size="icon-sm" variant="ghost"
+                            className="text-danger hover:bg-danger/10 shrink-0"
                             aria-label="ลบวันหยุด"
                             onClick={() => handleDeleteHoliday(h.id)}
                           >

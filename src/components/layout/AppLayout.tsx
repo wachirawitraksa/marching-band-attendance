@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, ClipboardCheck, Calendar, BarChart3,
   Users, Settings, LogOut, Menu, X, Music2, Sun, Moon, User
@@ -16,6 +16,7 @@ import { ROLE_LABELS } from '@/types';
 interface NavItem {
   path: string;
   label: string;
+  shortLabel?: string; // ป้ายใต้ไอคอนในเมนูล่าง (กว้างจำกัด)
   icon: React.ReactNode;
   roles?: string[];
   badge?: string;
@@ -26,8 +27,8 @@ const navItems: NavItem[] = [
   { path: '/attendance', label: 'เช็คชื่อ', icon: <ClipboardCheck size={18} /> },
   { path: '/schedule', label: 'ตารางซ้อม', icon: <Calendar size={18} /> },
   { path: '/reports', label: 'รายงาน', icon: <BarChart3 size={18} />, roles: ['admin', 'teacher'] },
-  { path: '/students', label: 'ข้อมูลนักเรียน', icon: <Users size={18} />, roles: ['admin', 'teacher'] },
-  { path: '/admin', label: 'จัดการระบบ', icon: <Settings size={18} />, roles: ['admin', 'teacher'] },
+  { path: '/students', label: 'ข้อมูลนักเรียน', shortLabel: 'นักเรียน', icon: <Users size={18} />, roles: ['admin', 'teacher'] },
+  { path: '/admin', label: 'จัดการระบบ', shortLabel: 'จัดการ', icon: <Settings size={18} />, roles: ['admin', 'teacher'] },
   { path: '/profile', label: 'โปรไฟล์', icon: <User size={18} /> },
 ];
 
@@ -35,7 +36,6 @@ export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { profile, signOut } = useAuth();
   const { theme, toggleTheme } = useAuthStore();
-  const location = useLocation();
 
   const handleSignOut = async () => {
     await signOut(); // signOut already navigates to /login via onAuthStateChange
@@ -52,6 +52,9 @@ export function AppLayout() {
   const visibleNav = navItems.filter(item =>
     !item.roles || (profile && item.roles.includes(profile.role))
   );
+  // เมนูล่างมือถือมีได้ 5 ช่อง — ถ้าหน้ามากกว่านั้น เหลือ 4 หน้า + ปุ่ม "เมนู" เปิด drawer ให้เข้าถึงได้ครบ
+  const hasOverflow = visibleNav.length > 5;
+  const bottomNav = hasOverflow ? visibleNav.slice(0, 4) : visibleNav;
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -62,7 +65,7 @@ export function AppLayout() {
         </div>
         <div className="flex flex-col">
           <span className="font-bold text-sm leading-tight text-foreground">Strisrinan</span>
-          <span className="text-[10px] text-muted-foreground leading-tight">Marching Band</span>
+          <span className="text-xs text-muted-foreground leading-tight">Marching Band</span>
         </div>
       </div>
 
@@ -80,7 +83,7 @@ export function AppLayout() {
               <p className="text-xs font-semibold truncate text-foreground">
                 {profile.nickname ? `${profile.nickname}` : profile.full_name.split(' ')[0]}
               </p>
-              <Badge variant="gold" className="text-[9px] px-1.5 py-0 h-4">
+              <Badge variant="gold" className="text-xs px-1.5 py-0 h-5">
                 {ROLE_LABELS[profile.role]}
               </Badge>
             </div>
@@ -97,7 +100,7 @@ export function AppLayout() {
             onClick={() => setSidebarOpen(false)}
             className={({ isActive }) =>
               cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150",
+                "flex items-center gap-3 px-3 py-2.5 coarse:py-3 rounded-lg text-sm transition-all duration-150",
                 isActive
                   ? "bg-brand-500/15 text-brand-text font-medium"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -107,7 +110,7 @@ export function AppLayout() {
             {item.icon}
             <span className="flex-1">{item.label}</span>
             {item.badge && (
-              <Badge variant="destructive" className="text-[10px] h-4 px-1.5">
+              <Badge variant="destructive" className="text-xs h-5 px-1.5">
                 {item.badge}
               </Badge>
             )}
@@ -119,14 +122,14 @@ export function AppLayout() {
       <div className="px-2 pb-4 space-y-0.5 border-t border-border pt-2 mt-2">
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground w-full transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 coarse:py-3 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground w-full transition-colors"
         >
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           <span>{theme === 'dark' ? 'โหมดสว่าง' : 'โหมดมืด'}</span>
         </button>
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-danger hover:bg-danger/10 w-full transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 coarse:py-3 rounded-lg text-sm text-danger hover:bg-danger/10 w-full transition-colors"
         >
           <LogOut size={18} />
           <span>ออกจากระบบ</span>
@@ -166,7 +169,7 @@ export function AppLayout() {
             aria-label="เปิดเมนู"
             aria-haspopup="dialog"
             aria-expanded={sidebarOpen}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+            className="-ml-2 flex items-center justify-center w-11 h-11 rounded-lg hover:bg-muted transition-colors"
           >
             <Menu size={20} />
           </button>
@@ -181,7 +184,7 @@ export function AppLayout() {
           <button
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+            className="-mr-2 flex items-center justify-center w-11 h-11 rounded-lg hover:bg-muted transition-colors"
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -196,23 +199,34 @@ export function AppLayout() {
 
         {/* Mobile Bottom Navigation */}
         <nav aria-label="เมนูลัด" className="md:hidden border-t border-border bg-card shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <div className="flex justify-around py-1.5">
-            {visibleNav.slice(0, 5).map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors min-w-[48px]",
+          <div className="flex">
+            {bottomNav.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  cn(
+                    "flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[56px] px-1 transition-colors",
                     isActive ? "text-brand-text" : "text-muted-foreground"
-                  )}
-                >
-                  {item.icon}
-                  <span className="text-[9px] leading-tight">{item.label.split(' ')[0]}</span>
-                </NavLink>
-              );
-            })}
+                  )
+                }
+              >
+                {item.icon}
+                <span className="text-xs leading-tight">{item.shortLabel ?? item.label}</span>
+              </NavLink>
+            ))}
+            {hasOverflow && (
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                aria-haspopup="dialog"
+                aria-expanded={sidebarOpen}
+                className="flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[56px] px-1 text-muted-foreground transition-colors"
+              >
+                <Menu size={18} />
+                <span className="text-xs leading-tight">เมนู</span>
+              </button>
+            )}
           </div>
         </nav>
       </div>

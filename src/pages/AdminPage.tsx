@@ -376,8 +376,8 @@ export default function AdminPage() {
             <div className="space-y-1">
               <Label htmlFor="admin-page-6" className="text-xs">รหัสผ่าน * (อย่างน้อย 6 ตัว)</Label>
               <div className="relative">
-                <Input id="admin-page-6" type={showPw ? 'text' : 'password'} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="h-9 text-sm pr-9" placeholder="••••••" />
-                <button type="button" onClick={() => setShowPw(!showPw)} aria-label={showPw ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={showPw} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <Input id="admin-page-6" type={showPw ? 'text' : 'password'} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="h-9 text-sm pr-11" placeholder="••••••" />
+                <button type="button" onClick={() => setShowPw(!showPw)} aria-label={showPw ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={showPw} className="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-muted-foreground hover:text-foreground">
                   {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>

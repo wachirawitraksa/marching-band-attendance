@@ -175,7 +175,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
             ].map(s => (
               <div key={s.label} className={`${s.bg} rounded-lg p-2 text-center`}>
                 <p className={`text-lg font-bold leading-none ${s.color}`}>{s.value}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
@@ -193,14 +193,14 @@ export function StudentCalendarReport({ student, onClose }: Props) {
 
           {/* Month navigator */}
           <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="เดือนก่อนหน้า" onClick={() => setViewDate(new Date(year, month - 1, 1))}>
+            <Button variant="ghost" size="icon-sm" aria-label="เดือนก่อนหน้า" onClick={() => setViewDate(new Date(year, month - 1, 1))}>
               <ChevronLeft size={16} />
             </Button>
             <span className="text-sm font-semibold">
               {thaiMonths[month]} {year + 543}
             </span>
             <Button
-              variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="เดือนถัดไป"
+              variant="ghost" size="icon-sm" aria-label="เดือนถัดไป"
               onClick={() => setViewDate(new Date(year, month + 1, 1))}
               disabled={isCurrentMonth}
             >
@@ -213,7 +213,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
             {/* Day headers */}
             <div className="grid grid-cols-7 mb-1">
               {['จ','อ','พ','พฤ','ศ','ส','อา'].map(d => (
-                <div key={d} className="text-center text-[10px] text-muted-foreground py-1 font-medium">{d}</div>
+                <div key={d} className="text-center text-xs text-muted-foreground py-1 font-medium">{d}</div>
               ))}
             </div>
 
@@ -241,7 +241,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
                       ${hasSess && !isFuture ? STATUS_BG[status] || 'bg-muted/30' : 'bg-transparent'}
                     `}
                   >
-                    <span className={`font-medium text-[11px] leading-none ${isToday ? 'text-brand-text' : ''}`}>{day}</span>
+                    <span className={`font-medium text-xs leading-none ${isToday ? 'text-brand-text' : ''}`}>{day}</span>
                     {hasSess && !isFuture && (
                       <div className={`w-1 h-1 rounded-full mt-0.5 ${STATUS_COLOR[status]}`} />
                     )}
@@ -265,7 +265,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
               ].map(l => (
                 <div key={l.label} className="flex items-center gap-1">
                   <div className={`w-2 h-2 rounded-full ${l.color}`} />
-                  <span className="text-[10px] text-muted-foreground">{l.label}</span>
+                  <span className="text-xs text-muted-foreground">{l.label}</span>
                 </div>
               ))}
             </div>
@@ -286,21 +286,21 @@ export function StudentCalendarReport({ student, onClose }: Props) {
                       <p className="text-xs font-medium">
                         {session.description || SESSION_TYPE_LABELS[session.session_type as keyof typeof SESSION_TYPE_LABELS]}
                       </p>
-                      <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Clock size={9} />
                         {formatTime(session.start_time)} - {formatTime(session.end_time)}
                       </p>
                       {record?.reason && (
-                        <p className="text-[10px] text-muted-foreground mt-0.5">เหตุผล: {record.reason}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">เหตุผล: {record.reason}</p>
                       )}
                       {record?.check_in_time && (
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           เช็คเวลา {new Date(record.check_in_time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
                           {record.gps_verified && ' ✓GPS'}
                         </p>
                       )}
                       {record?.teacher_override && (
-                        <Badge variant="info" className="text-[9px] mt-0.5">ครูแก้ไข</Badge>
+                        <Badge variant="info" className="text-xs mt-0.5">ครูแก้ไข</Badge>
                       )}
                     </div>
                     <div>

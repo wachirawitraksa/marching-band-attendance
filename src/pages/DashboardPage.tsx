@@ -143,7 +143,7 @@ export default function DashboardPage() {
           <CardContent className="p-4 flex items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <Badge variant="gold" className="text-[9px] px-1.5 py-0 h-4 animate-pulse">เปิดอยู่</Badge>
+                <Badge variant="gold" className="text-xs px-1.5 py-0 h-5 animate-pulse">เปิดอยู่</Badge>
                 <span className="text-sm font-semibold">{SESSION_TYPE_LABELS[openSession.session_type]}</span>
               </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
@@ -263,7 +263,7 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{SESSION_TYPE_LABELS[session.session_type]}</span>
                         {isOpen && (
-                          <Badge variant="gold" className="text-[9px] px-1.5 py-0 h-4 animate-pulse">
+                          <Badge variant="gold" className="text-xs px-1.5 py-0 h-5 animate-pulse">
                             เปิดอยู่
                           </Badge>
                         )}

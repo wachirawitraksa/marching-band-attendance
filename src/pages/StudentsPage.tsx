@@ -366,7 +366,7 @@ export default function StudentsPage() {
                             </Avatar>
                             <div className="min-w-0">
                               <p className="font-medium text-xs truncate">{s.full_name}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">
+                              <p className="text-xs text-muted-foreground truncate">
                                 {s.nickname ? `"${s.nickname}"` : ''}{s.nickname && s.student_id ? ' • ' : ''}{s.student_id ? `#${s.student_id}` : ''}
                                 {!s.nickname && !s.student_id ? s.email : ''}
                               </p>
@@ -381,7 +381,7 @@ export default function StudentsPage() {
                               </span>
                             ) : <span className="text-xs text-muted-foreground">ไม่ระบุ</span>}
                             {s.instrument && (
-                              <p className="text-[10px] text-muted-foreground">{s.instrument.name}</p>
+                              <p className="text-xs text-muted-foreground">{s.instrument.name}</p>
                             )}
                           </div>
                         </td>
@@ -391,7 +391,7 @@ export default function StudentsPage() {
                               {s.year_level ? `ม.${s.year_level}` : '-'}
                             </Badge>
                             {s.classroom && (
-                              <span className="text-[10px] text-muted-foreground">ห้อง {s.classroom}</span>
+                              <span className="text-xs text-muted-foreground">ห้อง {s.classroom}</span>
                             )}
                           </div>
                         </td>
@@ -443,13 +443,13 @@ export default function StudentsPage() {
                               </Avatar>
                               <div>
                                 <p className="font-medium text-xs">{s.full_name}</p>
-                                {s.nickname && <p className="text-[10px] text-muted-foreground">"{s.nickname}"</p>}
+                                {s.nickname && <p className="text-xs text-muted-foreground">"{s.nickname}"</p>}
                               </div>
                             </div>
                           </td>
                           <td className="p-3 hidden md:table-cell">
                             <p className="text-xs text-muted-foreground">{s.section?.name || '-'}</p>
-                            <p className="text-[10px] text-muted-foreground">{s.instrument?.name || ''}</p>
+                            <p className="text-xs text-muted-foreground">{s.instrument?.name || ''}</p>
                           </td>
                           <td className="p-3 text-right">
                             <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-xs" onClick={() => openEdit(s)}>
@@ -568,7 +568,7 @@ export default function StudentsPage() {
                 </SelectContent>
               </Select>
               {editForm.section_id && filteredInstrumentsFor(editForm.section_id).length === 0 && (
-                <p className="text-[11px] text-warning">ไม่มีเครื่องดนตรีใน Section นี้</p>
+                <p className="text-xs text-warning">ไม่มีเครื่องดนตรีใน Section นี้</p>
               )}
             </div>
 

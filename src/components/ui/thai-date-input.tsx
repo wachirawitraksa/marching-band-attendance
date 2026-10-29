@@ -94,7 +94,7 @@ export function ThaiDateInput({ value, onChange, min, className, disabled, id }:
           if (v.length === 2 && parseInt(v) >= 1) monthRef.current?.focus();
         }}
         className={cn(
-          'w-14 h-10 rounded-md border border-input bg-background px-2 py-2 text-sm text-center',
+          'w-14 h-10 coarse:h-11 rounded-md border border-input bg-background px-2 py-2 text-sm coarse:text-base text-center',
           'ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           'disabled:cursor-not-allowed disabled:opacity-50',
           '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
@@ -115,7 +115,7 @@ export function ThaiDateInput({ value, onChange, min, className, disabled, id }:
           if (e.target.value) yearRef.current?.focus();
         }}
         className={cn(
-          'flex-1 h-10 rounded-md border border-input bg-background px-2 py-2 text-sm',
+          'flex-1 h-10 coarse:h-11 rounded-md border border-input bg-background px-2 py-2 text-sm coarse:text-base',
           'ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           'disabled:cursor-not-allowed disabled:opacity-50',
           !month && 'text-muted-foreground'
@@ -145,13 +145,13 @@ export function ThaiDateInput({ value, onChange, min, className, disabled, id }:
             emit(day, month, e.target.value);
           }}
           className={cn(
-            'w-24 h-10 rounded-md border border-input bg-background px-2 py-2 text-sm text-center',
+            'w-24 h-10 coarse:h-11 rounded-md border border-input bg-background px-2 py-2 text-sm coarse:text-base text-center',
             'ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             'disabled:cursor-not-allowed disabled:opacity-50',
             '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
           )}
         />
-        <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
+        <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
           พ.ศ.
         </span>
       </div>

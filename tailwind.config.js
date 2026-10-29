@@ -111,5 +111,9 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    // touch/stylus primary input → larger hit areas without bloating desktop
+    function ({ addVariant }) { addVariant("coarse", "@media (pointer: coarse)"); },
+  ],
 }

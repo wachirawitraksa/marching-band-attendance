@@ -211,11 +211,11 @@ export default function ReportsPage() {
                             <div className="flex items-center gap-2">
                               <Avatar className="w-7 h-7">
                                 <AvatarImage src={student.profile_picture_url || ''} />
-                                <AvatarFallback className="text-[10px] bg-brand-500/20 text-brand-text">{getAvatarFallback(student.full_name)}</AvatarFallback>
+                                <AvatarFallback className="text-xs bg-brand-500/20 text-brand-text">{getAvatarFallback(student.full_name)}</AvatarFallback>
                               </Avatar>
                               <div>
                                 <p className="font-medium text-xs">{student.nickname || student.full_name}</p>
-                                <p className="text-[10px] text-muted-foreground">{student.instrument?.name}</p>
+                                <p className="text-xs text-muted-foreground">{student.instrument?.name}</p>
                               </div>
                             </div>
                           </td>

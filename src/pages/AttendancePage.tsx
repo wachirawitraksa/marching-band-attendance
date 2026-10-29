@@ -270,7 +270,7 @@ export default function AttendancePage() {
                           </p>
                         )}
                         {myRecord.reason && <p className="text-xs text-muted-foreground mt-0.5">เหตุผล: {myRecord.reason}</p>}
-                        {myRecord.teacher_override && <Badge variant="info" className="text-[10px] mt-1">ครูแก้ไขแล้ว</Badge>}
+                        {myRecord.teacher_override && <Badge variant="info" className="text-xs mt-1">ครูแก้ไขแล้ว</Badge>}
                       </div>
                     </div>
                   ) : (
@@ -440,24 +440,24 @@ function TeacherAttendanceView({ sessionId, onOverride }: { sessionId: string; o
               <div className="flex items-center gap-2.5">
                 <Avatar className="w-7 h-7">
                   <AvatarImage src={student.profile_picture_url || ''} />
-                  <AvatarFallback className="text-[10px] bg-brand-500/20 text-brand-text">
+                  <AvatarFallback className="text-xs bg-brand-500/20 text-brand-text">
                     {getAvatarFallback(student.full_name)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-xs font-medium leading-tight">{student.nickname || student.full_name.split(' ')[0]}</p>
-                  <p className="text-[10px] text-muted-foreground">{student.instrument?.name || 'ไม่ระบุ'}</p>
+                  <p className="text-xs text-muted-foreground">{student.instrument?.name || 'ไม่ระบุ'}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Badge
                   variant={!record ? 'outline' : record.status === 'present' ? 'success' : record.status === 'late' ? 'warning' : record.status === 'excused' ? 'info' : 'destructive'}
-                  className="text-[10px]"
+                  className="text-xs"
                 >
                   {!record ? 'ยังไม่เช็ค' : ATTENDANCE_STATUS_LABELS[record.status]}
                 </Badge>
                 <Button
-                  size="sm" variant="ghost" className="h-6 w-6 p-0"
+                  size="icon-sm" variant="ghost"
                   aria-label={`แก้ไขสถานะของ ${student.full_name}`}
                   onClick={() => onOverride(student.id, student.full_name)}
                 >

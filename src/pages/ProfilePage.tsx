@@ -384,14 +384,14 @@ export default function ProfilePage() {
                   placeholder="อย่างน้อย 6 ตัวอักษร"
                   value={newPw}
                   onChange={e => setNewPw(e.target.value)}
-                  className="pr-10"
+                  className="pr-11"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(p => !p)}
                   aria-label={showPw ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                   aria-pressed={showPw}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
