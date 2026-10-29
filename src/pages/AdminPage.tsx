@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useState } from 'react';
 import {
   Settings, UserPlus, Users, Loader2, Eye, EyeOff,
@@ -164,7 +165,7 @@ export default function AdminPage() {
       refreshUsers();
 
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
+      const msg = getErrorMessage(err, 'สร้างบัญชีไม่สำเร็จ ลองใหม่อีกครั้ง');
       setCreateError(msg);
     } finally {
       setCreating(false);
@@ -174,7 +175,7 @@ export default function AdminPage() {
   const handleToggleActive = async (userId: string, current: boolean) => {
     if (userId === myProfile?.id) { toast({ variant: 'destructive', title: 'ไม่สามารถปิดบัญชีตัวเองได้' }); return; }
     const { error } = await supabase.from('profiles').update({ is_active: !current }).eq('id', userId);
-    if (error) { toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' }); return; }
+    if (error) { toast({ variant: 'destructive', title: 'เปลี่ยนสถานะบัญชีไม่สำเร็จ', description: getErrorMessage(error) }); return; }
     toast({ variant: 'success', title: !current ? 'เปิดใช้งานแล้ว' : 'ปิดใช้งานแล้ว' });
     refreshUsers();
   };
@@ -182,7 +183,7 @@ export default function AdminPage() {
   const handleChangeRole = async (userId: string, role: Role) => {
     if (userId === myProfile?.id) { toast({ variant: 'destructive', title: 'ไม่สามารถเปลี่ยน Role ตัวเองได้' }); return; }
     const { error } = await supabase.from('profiles').update({ role }).eq('id', userId);
-    if (error) { toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' }); return; }
+    if (error) { toast({ variant: 'destructive', title: 'เปลี่ยน Role ไม่สำเร็จ', description: getErrorMessage(error) }); return; }
     toast({ variant: 'success', title: 'เปลี่ยน Role แล้ว' });
     refreshUsers();
   };

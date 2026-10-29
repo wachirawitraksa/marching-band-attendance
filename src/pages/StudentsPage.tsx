@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useState } from 'react';
 import {
   Users, Search, Edit2, GraduationCap, UserCheck,
@@ -143,7 +144,7 @@ export default function StudentsPage() {
       setEditDialog(null);
       refreshStudents();
     } catch (err) {
-      toast({ variant: 'destructive', title: 'บันทึกไม่สำเร็จ', description: err instanceof Error ? err.message : '' });
+      toast({ variant: 'destructive', title: 'บันทึกไม่สำเร็จ', description: getErrorMessage(err) });
     } finally {
       setSaving(false);
     }
@@ -217,7 +218,7 @@ export default function StudentsPage() {
       setAddError('');
       refreshStudents();
     } catch (err) {
-      setAddError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
+      setAddError(getErrorMessage(err, 'เพิ่มนักเรียนไม่สำเร็จ ลองใหม่อีกครั้ง'));
     } finally {
       setSaving(false);
     }
@@ -240,8 +241,12 @@ export default function StudentsPage() {
       toast({ variant: 'success', title: 'เลื่อนชั้นปีการศึกษาเรียบร้อย', description: 'นักเรียน ม.6 ถูกย้ายไปส่วนจบการศึกษาแล้ว' });
       setPromoteDialog(false);
       refreshStudents();
-    } catch {
-      toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' });
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'เลื่อนชั้นไม่สำเร็จ',
+        description: `${getErrorMessage(err)} — บางชั้นอาจถูกเลื่อนไปแล้ว ตรวจสอบชั้นปีของนักเรียนก่อนกดเลื่อนชั้นอีกครั้ง`,
+      });
     } finally {
       setPromoting(false);
     }

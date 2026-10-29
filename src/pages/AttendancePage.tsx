@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import {
   MapPin, QrCode, Clock, CheckCircle2, XCircle, AlertCircle,
@@ -97,8 +98,8 @@ export default function AttendancePage() {
     } catch (err) {
       toast({
         variant: 'destructive',
-        title: 'เกิดข้อผิดพลาด',
-        description: err instanceof Error ? err.message : 'ลองใหม่อีกครั้ง',
+        title: 'เช็คชื่อไม่สำเร็จ',
+        description: getErrorMessage(err),
       });
     } finally {
       setCheckingIn(null);
@@ -114,7 +115,7 @@ export default function AttendancePage() {
       setReason('');
       toast({ variant: 'success', title: 'บันทึกเหตุผลแล้ว' });
     } catch (err) {
-      toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด', description: err instanceof Error ? err.message : '' });
+      toast({ variant: 'destructive', title: 'บันทึกเหตุผลไม่สำเร็จ', description: getErrorMessage(err) });
     } finally {
       setSubmittingReason(false);
     }
@@ -142,7 +143,7 @@ export default function AttendancePage() {
       // sync กับ Dashboard/Reports ที่ cache สถิติเดียวกันไว้
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
     } catch (err) {
-      toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' });
+      toast({ variant: 'destructive', title: 'บันทึกการแก้ไขสถานะไม่สำเร็จ', description: getErrorMessage(err) });
     } finally {
       setSavingOverride(false);
     }

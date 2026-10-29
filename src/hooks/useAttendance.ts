@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PracticeSession, AttendanceRecord, SessionType } from '@/types';
@@ -24,7 +25,7 @@ export function useAttendance(date?: string) {
       if (error) throw error;
       setSessions(data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error fetching sessions');
+      setError(getErrorMessage(err, 'โหลดรอบซ้อมไม่สำเร็จ'));
     }
   }, [targetDate]);
 
@@ -58,7 +59,7 @@ export function useAttendance(date?: string) {
       if (error) throw error;
       setMyRecords(data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error fetching records');
+      setError(getErrorMessage(err, 'โหลดข้อมูลการเข้าซ้อมไม่สำเร็จ'));
     }
   }, [profile, targetDate]);
 

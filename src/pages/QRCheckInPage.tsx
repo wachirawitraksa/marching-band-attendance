@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CheckCircle2, XCircle, Loader2, Music2 } from 'lucide-react';
@@ -24,7 +25,7 @@ export default function QRCheckInPage() {
 
   useEffect(() => {
     if (!user) { setStatus('not_auth'); return; }
-    if (!token) { setStatus('error'); setMessage('Token ไม่ถูกต้อง'); return; }
+    if (!token) { setStatus('error'); setMessage('ลิงก์ QR Code ไม่ถูกต้อง ขอ QR Code ใหม่จากครู'); return; }
     processQR();
   }, [token, user, profile]);
 
@@ -37,7 +38,7 @@ export default function QRCheckInPage() {
         .eq('qr_token', token)
         .single();
 
-      if (error || !session) { setStatus('error'); setMessage('QR Code ไม่ถูกต้องหรือหมดอายุ'); return; }
+      if (error || !session) { setStatus('error'); setMessage('QR Code ไม่ถูกต้องหรือหมดอายุ ขอ QR Code ใหม่จากครู'); return; }
 
       // Check if session is today
       const today = getTodayBangkok();
@@ -90,7 +91,7 @@ export default function QRCheckInPage() {
       setMessage('เช็คชื่อสำเร็จ!');
     } catch (err) {
       setStatus('error');
-      setMessage(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
+      setMessage(getErrorMessage(err, 'ลองสแกนใหม่อีกครั้ง'));
     }
   };
 
@@ -108,7 +109,7 @@ export default function QRCheckInPage() {
     loading: 'กำลังตรวจสอบ...',
     success: 'เช็คชื่อสำเร็จ!',
     already: 'เช็คชื่อแล้ว',
-    error: 'เกิดข้อผิดพลาด',
+    error: 'เช็คชื่อไม่สำเร็จ',
     closed: 'ไม่สามารถเช็คชื่อได้',
     out_of_location: 'อยู่นอกพื้นที่',
     not_auth: 'กรุณาเข้าสู่ระบบ',

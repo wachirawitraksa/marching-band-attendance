@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Trash2, Calendar, Clock, Loader2,
@@ -143,7 +144,7 @@ export default function SchedulePage() {
       await loadData();
       syncSharedCaches();
     } catch (err) {
-      toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด', description: err instanceof Error ? err.message : '' });
+      toast({ variant: 'destructive', title: 'เพิ่มรอบซ้อมไม่สำเร็จ', description: getErrorMessage(err) });
     } finally { setSaving(false); }
   };
 
@@ -162,7 +163,7 @@ export default function SchedulePage() {
       toast({
         variant: 'destructive',
         title: 'เกิดข้อผิดพลาดในการลบรอบซ้อม',
-        description: err instanceof Error ? err.message : 'โปรดลองใหม่อีกครั้ง',
+        description: getErrorMessage(err, 'โปรดลองใหม่อีกครั้ง'),
       });
     } finally { setDeleting(null); }
   };
@@ -188,7 +189,7 @@ export default function SchedulePage() {
       setHolidayForm({ date: '', description: '' });
       await loadData();
       syncSharedCaches();
-    } catch (err) { setHolidayError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด'); }
+    } catch (err) { setHolidayError(getErrorMessage(err, 'เพิ่มวันหยุดไม่สำเร็จ ลองใหม่อีกครั้ง')); }
     finally { setSavingHol(false); }
   };
 
@@ -234,7 +235,7 @@ export default function SchedulePage() {
       setRangeForm({ start_date: '', end_date: '', label: '' });
       await loadData();
       syncSharedCaches();
-    } catch (err) { setRangeError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด'); }
+    } catch (err) { setRangeError(getErrorMessage(err, 'เพิ่มช่วงปิดเทอมไม่สำเร็จ ลองใหม่อีกครั้ง')); }
     finally { setSavingRange(false); }
   };
 
@@ -246,7 +247,7 @@ export default function SchedulePage() {
       setDeleteRange(null);
       await loadData();
       syncSharedCaches();
-    } catch { toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' }); }
+    } catch (err) { toast({ variant: 'destructive', title: 'ลบช่วงปิดเทอมไม่สำเร็จ', description: getErrorMessage(err) }); }
   };
 
   const todayStr    = getTodayBangkok();

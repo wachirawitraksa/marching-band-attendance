@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { MapPin, Save, Loader2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -63,8 +64,8 @@ export function GPSSettingsManager() {
       console.error('Failed to load GPS settings:', err);
       toast({
         variant: 'destructive',
-        title: 'เกิดข้อผิดพลาด',
-        description: 'ไม่สามารถโหลดตั้งค่า GPS',
+        title: 'โหลดตั้งค่า GPS ไม่สำเร็จ',
+        description: 'ตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้านี้',
       });
     } finally {
       setLoading(false);
@@ -115,8 +116,8 @@ export function GPSSettingsManager() {
       console.error('Error saving GPS settings:', err);
       toast({
         variant: 'destructive',
-        title: 'เกิดข้อผิดพลาด',
-        description: err instanceof Error ? err.message : 'ไม่สามารถบันทึกตั้งค่า',
+        title: 'บันทึกตั้งค่า GPS ไม่สำเร็จ',
+        description: getErrorMessage(err),
       });
     } finally {
       setSaving(false);

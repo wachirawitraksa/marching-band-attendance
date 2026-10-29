@@ -1,4 +1,5 @@
 // components/reports/ExportReportDialog.tsx
+import { getErrorMessage } from '@/lib/utils';
 import { useState } from 'react';
 import { FileDown, Loader2, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/ui/use-toast';
 import { Profile, PracticeSession, AttendanceRecord, AttendanceStatus } from '@/types';
 import { formatThaiDate, getTodayBangkok, normalizeInputDate } from '@/lib/utils';
 import type { ReportSession, ReportRow } from './AttendanceReportPDF';
@@ -55,6 +57,7 @@ interface Props {
 
 export function ExportReportDialog({ students }: Props) {
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
   const [preset, setPreset] = useState('this_week');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -100,7 +103,7 @@ export function ExportReportDialog({ students }: Props) {
       const sessions: PracticeSession[] = sessionsRaw || [];
 
       if (sessions.length === 0) {
-        alert('ไม่มีรอบซ้อมในช่วงเวลาที่เลือก');
+        toast({ variant: 'destructive', title: 'ไม่มีรอบซ้อมในช่วงที่เลือก', description: 'เลือกช่วงวันที่ให้กว้างขึ้นแล้วลองอีกครั้ง' });
         setLoading(false);
         return;
       }
@@ -181,7 +184,7 @@ export function ExportReportDialog({ students }: Props) {
       setOpen(false);
     } catch (err) {
       console.error(err);
-      alert('เกิดข้อผิดพลาดในการสร้าง PDF');
+      toast({ variant: 'destructive', title: 'สร้างไฟล์ PDF ไม่สำเร็จ', description: getErrorMessage(err) });
     } finally {
       setLoading(false);
     }

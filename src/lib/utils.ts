@@ -236,3 +236,29 @@ export function haversineDistance(
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c; // Distance in meters
 }
+
+/**
+ * แปลง error ที่ได้จาก Supabase / เครือข่าย เป็นข้อความไทยที่บอกผู้ใช้ว่าต้องทำอะไรต่อ
+ * - ข้อความที่แอปโยนเองเป็นภาษาไทยอยู่แล้ว ใช้ตามนั้น
+ * - ข้อความอังกฤษจากไลบรารี แปลงเฉพาะกรณีที่รู้สาเหตุ ที่เหลือใช้ fallback (และ log ตัวจริงไว้ใน console)
+ */
+export function getErrorMessage(err: unknown, fallback = 'ลองใหม่อีกครั้ง'): string {
+  const raw =
+    err instanceof Error ? err.message
+    : typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: unknown }).message)
+    : typeof err === 'string' ? err
+    : '';
+  if (/[\u0E00-\u0E7F]/.test(raw)) return raw;
+  if (raw) console.error('[error]', err);
+  if (/failed to fetch|networkerror|load failed|network request failed/i.test(raw)) {
+    return 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่';
+  }
+  if (/row-level security|permission denied|not authorized|insufficient/i.test(raw)) {
+    return 'บัญชีนี้ไม่มีสิทธิ์ทำรายการนี้';
+  }
+  if (/already registered|already been registered/i.test(raw)) return 'อีเมลนี้ถูกใช้งานแล้ว';
+  if (/duplicate key|unique constraint/i.test(raw)) return 'ข้อมูลนี้มีอยู่ในระบบแล้ว';
+  if (/password should be at least/i.test(raw)) return 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+  if (/rate limit|too many requests/i.test(raw)) return 'ทำรายการบ่อยเกินไป รอสักครู่แล้วลองใหม่';
+  return fallback;
+}

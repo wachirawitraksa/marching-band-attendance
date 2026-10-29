@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useState } from 'react';
 import {
   Calendar, Plus, CheckCircle2, AlertTriangle, Loader2,
@@ -58,7 +59,7 @@ export function SemesterManager() {
       toast({ variant: 'success', title: `สร้างภาคเรียนที่ ${newSemester}/${newYear} แล้ว` });
       setCreateDialog(false);
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
+      setCreateError(getErrorMessage(err, 'สร้างภาคเรียนไม่สำเร็จ ลองใหม่อีกครั้ง'));
     } finally {
       setCreating(false);
     }
@@ -76,7 +77,7 @@ export function SemesterManager() {
       });
       setSwitchDialog(null);
     } catch (err) {
-      toast({ variant: 'destructive', title: 'เกิดข้อผิดพลาด' });
+      toast({ variant: 'destructive', title: 'เปลี่ยนภาคเรียนไม่สำเร็จ', description: getErrorMessage(err) });
     } finally {
       setSwitching(false);
     }

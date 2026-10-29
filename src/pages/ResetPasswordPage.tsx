@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Music2, Lock, CheckCircle } from 'lucide-react';
@@ -30,7 +31,7 @@ export default function ResetPasswordPage() {
       setSuccess(true);
       setTimeout(() => navigate('/login'), 2500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
+      setError(getErrorMessage(err, 'ตั้งรหัสผ่านใหม่ไม่สำเร็จ ลองขอลิงก์รีเซ็ตใหม่อีกครั้ง'));
     } finally {
       setIsLoading(false);
     }

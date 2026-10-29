@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -110,7 +111,7 @@ export default function DashboardPage() {
       toast({
         variant: 'destructive',
         title: 'เช็คชื่อไม่สำเร็จ',
-        description: err instanceof Error ? err.message : 'เกิดข้อผิดพลาด',
+        description: getErrorMessage(err),
       });
     } finally {
       setCheckingIn(false);

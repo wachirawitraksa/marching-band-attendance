@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Camera, Save, Lock, Loader2, User, Mail, Music,
@@ -131,7 +132,7 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       toast({ variant: 'success', title: 'บันทึกชื่อเล่นแล้ว' });
     } catch (err) {
-      toast({ variant: 'destructive', title: 'บันทึกไม่สำเร็จ', description: err instanceof Error ? err.message : '' });
+      toast({ variant: 'destructive', title: 'บันทึกไม่สำเร็จ', description: getErrorMessage(err) });
     } finally {
       setSaving(false);
     }
@@ -160,7 +161,7 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       toast({ variant: 'success', title: 'อัปโหลดรูปสำเร็จ' });
     } catch (err) {
-      toast({ variant: 'destructive', title: 'อัปโหลดไม่สำเร็จ', description: err instanceof Error ? err.message : '' });
+      toast({ variant: 'destructive', title: 'อัปโหลดไม่สำเร็จ', description: getErrorMessage(err) });
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -179,7 +180,7 @@ export default function ProfilePage() {
       setNewPw(''); setConfirmPw('');
       toast({ variant: 'success', title: 'เปลี่ยนรหัสผ่านสำเร็จ' });
     } catch (err) {
-      setPwError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
+      setPwError(getErrorMessage(err, 'เปลี่ยนรหัสผ่านไม่สำเร็จ ลองใหม่อีกครั้ง'));
     } finally {
       setChangingPw(false);
     }

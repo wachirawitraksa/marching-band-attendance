@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Music2, Mail, CheckCircle } from 'lucide-react';
@@ -23,7 +24,7 @@ export default function ForgotPasswordPage() {
       await forgotPassword(email);
       setSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
+      setError(getErrorMessage(err, 'ส่งลิงก์รีเซ็ตรหัสผ่านไม่สำเร็จ ลองใหม่อีกครั้ง'));
     } finally {
       setIsLoading(false);
     }

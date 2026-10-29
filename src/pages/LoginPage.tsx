@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Music, Music2 } from 'lucide-react';
@@ -61,13 +62,13 @@ export default function LoginPage() {
       await signIn(email, password);
       // Navigation handled by onAuthStateChange in App.tsx
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
+      const msg = err instanceof Error ? err.message : '';
       if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
         setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
       } else if (msg.includes('Email not confirmed')) {
         setError('กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ');
       } else {
-        setError(msg);
+        setError(getErrorMessage(err, 'เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง'));
       }
     } finally {
       setIsLoading(false);
