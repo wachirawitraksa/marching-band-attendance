@@ -1,23 +1,51 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { Toaster } from '@/components/ui/toaster';
 import { AppLayout } from '@/components/layout/AppLayout';
 
-// Pages
+// Login อยู่ใน bundle หลัก (หน้าแรกของคนที่ยังไม่ล็อกอิน) — หน้าอื่นแยก chunk โหลดเมื่อเข้าถึง
 import LoginPage from '@/pages/LoginPage';
-import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
-import ResetPasswordPage from '@/pages/ResetPasswordPage';
-import DashboardPage from '@/pages/DashboardPage';
-import AttendancePage from '@/pages/AttendancePage';
-import QRCheckInPage from '@/pages/QRCheckInPage';
-import ReportsPage from '@/pages/ReportsPage';
-import StudentsPage from '@/pages/StudentsPage';
-import ProfilePage from '@/pages/ProfilePage';
-import AdminPage from '@/pages/AdminPage';
-import SchedulePage from '@/pages/SchedulePage';
-import NotFoundPage from '@/pages/NotFoundPage';
+
+// deploy ใหม่ทำให้ชื่อ chunk เก่าหาย (404) → ลอง reload หน้าครั้งเดียวเพื่อดึง index ใหม่ ถ้ายังพังค่อยปล่อย error
+function lazyPage<T extends React.ComponentType<any>>(load: () => Promise<{ default: T }>) {
+  const key = 'chunk-reload';
+  return lazy(() =>
+    load().then(
+      (mod) => { sessionStorage.removeItem(key); return mod; },
+      (err) => {
+        if (sessionStorage.getItem(key)) throw err;
+        sessionStorage.setItem(key, '1');
+        window.location.reload();
+        return new Promise<never>(() => {});
+      }
+    )
+  );
+}
+
+const ForgotPasswordPage = lazyPage(() => import('@/pages/ForgotPasswordPage'));
+const ResetPasswordPage  = lazyPage(() => import('@/pages/ResetPasswordPage'));
+const DashboardPage      = lazyPage(() => import('@/pages/DashboardPage'));
+const AttendancePage     = lazyPage(() => import('@/pages/AttendancePage'));
+const QRCheckInPage      = lazyPage(() => import('@/pages/QRCheckInPage'));
+const ReportsPage        = lazyPage(() => import('@/pages/ReportsPage'));
+const StudentsPage       = lazyPage(() => import('@/pages/StudentsPage'));
+const ProfilePage        = lazyPage(() => import('@/pages/ProfilePage'));
+const AdminPage          = lazyPage(() => import('@/pages/AdminPage'));
+const SchedulePage       = lazyPage(() => import('@/pages/SchedulePage'));
+const NotFoundPage       = lazyPage(() => import('@/pages/NotFoundPage'));
+
+function PageLoader() {
+  return (
+    <div role="status" className="min-h-[50vh] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-muted-foreground">กำลังโหลด...</p>
+      </div>
+    </div>
+  );
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore();
@@ -163,6 +191,7 @@ export default function App() {
 
   return (
     <>
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public routes */}
         <Route path="/login"          element={<LoginPage />} />
@@ -191,6 +220,7 @@ export default function App() {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </Suspense>
       <Toaster />
     </>
   );

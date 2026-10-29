@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/lib/supabase';
 import { Profile, PracticeSession, AttendanceRecord, AttendanceStatus } from '@/types';
 import { formatThaiDate, getTodayBangkok, normalizeInputDate } from '@/lib/utils';
-import { downloadAttendancePDF, ReportSession, ReportRow } from './AttendanceReportPDF';
+import type { ReportSession, ReportRow } from './AttendanceReportPDF';
 import { shouldExcludeFromStats } from '@/lib/attendanceExemption';
 
 const DAY_TH = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
@@ -169,6 +169,8 @@ export function ExportReportDialog({ students }: Props) {
         ? `วันที่ ${startBE}`
         : `ช่วง ${startBE} – ${endBE}`;
 
+      // @react-pdf/renderer หนักมาก — โหลดตอนกดส่งออกเท่านั้น ไม่ให้ติดไปกับ bundle หลักของหน้ารายงาน
+      const { downloadAttendancePDF } = await import('./AttendanceReportPDF');
       await downloadAttendancePDF({
         title: 'รายงานการเข้าซ้อม วงโยธวาทิต',
         dateRange,
