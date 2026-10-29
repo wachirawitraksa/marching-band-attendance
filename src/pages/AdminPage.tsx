@@ -234,21 +234,21 @@ export default function AdminPage() {
                 ) : (
                   <div className="divide-y divide-border/50">
                     {roleGroups[role].map(user => (
-                      <div key={user.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/20">
-                        <div className="flex items-center gap-2.5">
-                          <Avatar className="w-8 h-8">
+                      <div key={user.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/20">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <Avatar className="w-8 h-8 shrink-0">
                             <AvatarImage src={user.profile_picture_url || ''} />
                             <AvatarFallback className="text-xs bg-brand-500/20 text-brand-text">{getAvatarFallback(user.full_name)}</AvatarFallback>
                           </Avatar>
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-sm font-medium">{user.full_name}{user.nickname && <span className="text-muted-foreground text-xs ml-1">({user.nickname})</span>}</p>
-                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                            <p className="text-xs text-muted-foreground truncate" title={user.email}>{user.email}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                           {isAdmin && user.id !== myProfile?.id && (
                             <Select value={user.role} onValueChange={v => handleChangeRole(user.id, v as Role)}>
-                              <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectTrigger className="h-7 w-24 text-xs" aria-label={`Role ของ ${user.full_name}`}><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="admin">Admin</SelectItem>
                                 <SelectItem value="teacher">ครู</SelectItem>
@@ -257,6 +257,7 @@ export default function AdminPage() {
                             </Select>
                           )}
                           <Switch
+                            aria-label={`เปิดใช้งานบัญชี ${user.full_name}`}
                             checked={user.is_active}
                             onCheckedChange={() => handleToggleActive(user.id, user.is_active)}
                             disabled={user.id === myProfile?.id}

@@ -94,7 +94,7 @@ export default function LoginPage() {
             <Music2 size={28} className="text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-wide">Srinan Marching Band</h1>
-          <p className="text-sm text-brand-400/70 mt-1">ระบบเช็คชื่อนักเรียน</p>
+          <p className="text-sm text-brand-300 mt-1">ระบบเช็คชื่อนักเรียน</p>
         </div>
 
         {/* Card */}
@@ -150,7 +150,7 @@ export default function LoginPage() {
             <div className="flex justify-end">
               <Link
                 to="/forgot-password"
-                className="text-xs text-brand-400/80 hover:text-brand-400 transition-colors"
+                className="inline-flex items-center min-h-11 -my-2 px-1 -mr-1 text-sm text-brand-300 hover:text-brand-200 transition-colors"
               >
                 ลืมรหัสผ่าน?
               </Link>

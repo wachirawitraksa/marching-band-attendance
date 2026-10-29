@@ -60,10 +60,10 @@ export default function ReportsPage() {
   const overallRate = calculateAttendanceRate(overallPresent, totalRecords.length);
 
   const pieData = [
-    { name: 'มาซ้อม', value: totalRecords.filter(r => r.status === 'present').length, color: '#22c55e' },
-    { name: 'ขาดซ้อม', value: totalRecords.filter(r => r.status === 'absent').length, color: '#ef4444' },
-    { name: 'มาสาย', value: totalRecords.filter(r => r.status === 'late').length, color: '#2d8912' },
-    { name: 'ลา', value: totalRecords.filter(r => r.status === 'excused').length, color: '#3b82f6' },
+    { name: 'มาซ้อม', value: totalRecords.filter(r => r.status === 'present').length, color: 'hsl(var(--success))' },
+    { name: 'ขาดซ้อม', value: totalRecords.filter(r => r.status === 'absent').length, color: 'hsl(var(--danger))' },
+    { name: 'มาสาย', value: totalRecords.filter(r => r.status === 'late').length, color: 'hsl(var(--warning))' },
+    { name: 'ลา', value: totalRecords.filter(r => r.status === 'excused').length, color: 'hsl(var(--info))' },
   ].filter(d => d.value > 0);
 
   const sectionStats = sections.map(sec => {
@@ -154,16 +154,29 @@ export default function ReportsPage() {
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">สัดส่วนการเข้าร่วม</CardTitle></CardHeader>
               <CardContent>
-                <div className="h-52">
+                <div className="h-44">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={pieData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                      <Pie data={pieData} cx="50%" cy="50%" outerRadius={72} dataKey="value" stroke="hsl(var(--card))">
                         {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                       </Pie>
                       <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
+                {/* legend เป็น HTML — ป้ายรอบวงกลมล้นการ์ดบนจอแคบ และอ่านด้วย screen reader ไม่ได้ */}
+                <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                  {pieData.map(d => {
+                    const total = pieData.reduce((sum, x) => sum + x.value, 0);
+                    return (
+                      <li key={d.name} className="flex items-center gap-2 min-w-0">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: d.color }} />
+                        <span className="text-muted-foreground truncate">{d.name}</span>
+                        <span className="ml-auto font-medium tabular-nums">{total ? Math.round((d.value / total) * 100) : 0}%</span>
+                      </li>
+                    );
+                  })}
+                </ul>
               </CardContent>
             </Card>
             <Card>
@@ -172,11 +185,11 @@ export default function ReportsPage() {
                 <div className="h-52">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={sectionStats} margin={{ top: 4, right: 4, left: -25, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#666' }} />
-                      <YAxis tick={{ fontSize: 10, fill: '#666' }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                      <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                       <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} formatter={(v) => [`${v}%`, 'อัตราเข้าร่วม']} />
-                      <Bar dataKey="rate" fill="#2d8912" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="rate" fill="hsl(var(--brand-text))" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -295,7 +308,7 @@ function StudentSelfReport({ profile, allRecords, onViewCalendar }: { profile: P
             <div className="relative w-16 h-16 shrink-0">
               <svg className="w-16 h-16 -rotate-90">
                 <circle cx="32" cy="32" r="26" stroke="hsl(var(--muted))" strokeWidth="6" fill="none" />
-                <circle cx="32" cy="32" r="26" stroke="#2d8912" strokeWidth="6" fill="none"
+                <circle cx="32" cy="32" r="26" stroke="hsl(var(--brand-text))" strokeWidth="6" fill="none"
                   strokeDasharray={`${2 * Math.PI * 26 * rate / 100} ${2 * Math.PI * 26}`} strokeLinecap="round" />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
