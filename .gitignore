@@ -9,3 +9,5 @@ dist-ssr
 *.log
 
 critique/
+# Impeccable design-tool artifacts (critique snapshots, live server state)
+.impeccable/
