@@ -17,13 +17,14 @@ import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
-import { formatThaiDate, formatTime, getDayOfWeekThai, getTodayBangkok, getBangkokDateWithOffset, getBangkokDayOfWeek } from '@/lib/utils';
+import { formatThaiDate, formatTime, getDayOfWeekThai, getTodayBangkok, getBangkokDateWithOffset, getBangkokDayOfWeek, describeAttendanceRule } from '@/lib/utils';
 import { ThaiDateInput } from '@/components/ui/thai-date-input';
 import { PracticeSession, Holiday, HolidayRange, SESSION_TYPE_LABELS } from '@/types';
 
+// กติกามา/สายดึงจาก ATTENDANCE_RULES (เดิมพิมพ์ "ห้ามเกิน 15:35" ไว้ตรงนี้ ขณะที่ระบบนับมาปกติถึง 15:45)
 const FIXED_SCHEDULE = [
-  { day: 'จันทร์ – ศุกร์', time: '07:00 – 08:30 น.', label: 'ซ้อมเช้า (ห้ามเกิน 07:45 น.)' },
-  { day: 'พฤหัสบดี',       time: '15:20 – 16:10 น.', label: 'คาบชุมนุม  (ห้ามเกิน 15:35 น.)' },
+  { day: 'จันทร์ – ศุกร์', time: '07:00 – 08:30 น.', label: 'ซ้อมเช้า', rule: describeAttendanceRule('morning') },
+  { day: 'พฤหัสบดี',       time: '15:20 – 16:10 น.', label: 'คาบชุมนุม', rule: describeAttendanceRule('club') },
 ];
 
 export default function SchedulePage() {
@@ -352,9 +353,10 @@ export default function SchedulePage() {
                     <div>
                       <p className="text-sm font-medium">{s.label}</p>
                       <p className="text-xs text-muted-foreground">วัน{s.day}</p>
+                      {s.rule && <p className="text-xs text-muted-foreground">{s.rule}</p>}
                     </div>
                   </div>
-                  <p className="text-sm text-brand-text font-medium">{s.time}</p>
+                  <p className="text-sm text-brand-text font-medium text-right whitespace-nowrap">{s.time}</p>
                 </div>
               ))}
               <p className="text-xs text-muted-foreground pt-1">

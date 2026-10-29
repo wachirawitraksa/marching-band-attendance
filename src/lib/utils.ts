@@ -112,13 +112,26 @@ export function getBangkokDayOfWeek(base: Date = new Date()): number {
  *  - lateUntil    : เช็คภายในเวลานี้ = มาสาย (late) — เลยจากนี้ถือว่าขาด (absent) และปิดรับเช็ค
  */
 export const ATTENDANCE_RULES: Record<SessionType, { open: number; presentUntil: number; lateUntil: number } | null> = {
-  // ซ้อมเช้า จ.–ศ.: เช็คได้ตั้งแต่ตี 5, ปกติถึง 07:45, สาย 07:46–08:09, ตั้งแต่ 08:10 ขาด
-  morning: { open: 5 * 60, presentUntil: 7 * 60 + 45, lateUntil: 8 * 60 + 30 },  // ขาดหลัง 08:10
-  // คาบชุมนุม: เช็คได้ตั้งแต่ 15:20, ปกติถึง 15:35, สาย 15:36–15:45, ตั้งแต่ 15:46 ขาด
-  club: { open: 15 * 60 + 20, presentUntil: 15 * 60 + 45, lateUntil: 16 * 60 + 0 },  // ขาดหลัง 16:00
+  // ซ้อมเช้า จ.–ศ.: เช็คได้ตั้งแต่ 05:00, ปกติถึง 07:45, สายถึง 08:30, หลังจากนั้นขาด
+  morning: { open: 5 * 60, presentUntil: 7 * 60 + 45, lateUntil: 8 * 60 + 30 },
+  // คาบชุมนุม: เช็คได้ตั้งแต่ 15:20, ปกติถึง 15:45, สายถึง 16:00, หลังจากนั้นขาด
+  // (lateUntil ต้องตรงกับ cron auto_mark_absent ใน supabase/migrations/020_auto_mark_absent.sql)
+  club: { open: 15 * 60 + 20, presentUntil: 15 * 60 + 45, lateUntil: 16 * 60 + 0 },
   // ซ้อมพิเศษ: ครูควบคุมเอง ไม่มีกติกาเวลาตายตัว
   extra: null,
 };
+
+/** นาทีนับจากเที่ยงคืน → "07:45" */
+export function formatMinutes(minutes: number): string {
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+/** ข้อความกติกาเวลาเช็คชื่อสำหรับแสดงผู้ใช้ — ดึงจาก ATTENDANCE_RULES เพื่อไม่ให้ข้อความกับระบบนับไม่ตรงกัน */
+export function describeAttendanceRule(sessionType: SessionType): string | null {
+  const rule = ATTENDANCE_RULES[sessionType];
+  if (!rule) return null;
+  return `มาปกติถึง ${formatMinutes(rule.presentUntil)} · สายถึง ${formatMinutes(rule.lateUntil)} น.`;
+}
 
 /** คำนวณสถานะการเช็คชื่อจากเวลาไทยปัจจุบัน: present / late / absent */
 export function getCheckInStatus(

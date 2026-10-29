@@ -195,7 +195,11 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Stats cards */}
+      {/* Stats cards — บอกขอบเขตของตัวเลขให้ชัด: ครู = วันนี้ทุกรอบ, นักเรียน = สะสมทั้งหมด */}
+      <section aria-labelledby="stats-heading" className="space-y-2">
+      <h2 id="stats-heading" className="text-sm font-medium text-muted-foreground">
+        {isTeacher ? 'สรุปวันนี้ · นับรวมทุกรอบ' : 'สถิติของฉัน · ทั้งหมด'}
+      </h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="bg-success/5 border-success/20">
           <CardContent className="p-4">
@@ -204,7 +208,6 @@ export default function DashboardPage() {
               <CheckCircle2 size={16} className="text-success" />
             </div>
             <p className="text-2xl font-bold text-success">{stats.present}</p>
-            {isTeacher && <p className="text-xs text-muted-foreground mt-0.5">ครั้ง</p>}
           </CardContent>
         </Card>
 
@@ -232,7 +235,7 @@ export default function DashboardPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">
-                {isTeacher ? 'นักเรียน' : 'อัตราเข้าร่วม'}
+                {isTeacher ? 'นักเรียนทั้งหมด' : 'อัตราเข้าร่วม'}
               </span>
               {isTeacher ? <Users size={16} className="text-brand-text" /> : <TrendingUp size={16} className="text-brand-text" />}
             </div>
@@ -242,6 +245,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      </section>
 
       <div className="grid md:grid-cols-2 gap-4">
         {/* Today's sessions */}
