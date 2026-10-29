@@ -205,9 +205,9 @@ export function ExportReportDialog({ students }: Props) {
         <div className="space-y-4 pt-2">
           {/* Preset */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">ช่วงเวลา</Label>
+            <Label htmlFor="export-report-dialog-1" className="text-xs text-muted-foreground">ช่วงเวลา</Label>
             <Select value={preset} onValueChange={handlePreset}>
-              <SelectTrigger className="h-9 text-sm">
+              <SelectTrigger id="export-report-dialog-1" className="h-9 text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -224,8 +224,8 @@ export function ExportReportDialog({ students }: Props) {
           {/* Date range */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">วันเริ่ม</Label>
-              <Input
+              <Label htmlFor="export-report-dialog-2" className="text-xs text-muted-foreground">วันเริ่ม</Label>
+              <Input id="export-report-dialog-2"
                 type="date"
                 value={startDate}
                 onChange={e => { setStartDate(e.target.value); setPreset('custom'); }}
@@ -233,8 +233,8 @@ export function ExportReportDialog({ students }: Props) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">วันสิ้นสุด</Label>
-              <Input
+              <Label htmlFor="export-report-dialog-3" className="text-xs text-muted-foreground">วันสิ้นสุด</Label>
+              <Input id="export-report-dialog-3"
                 type="date"
                 value={endDate}
                 onChange={e => { setEndDate(e.target.value); setPreset('custom'); }}

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ClipboardCheck, Calendar, BarChart3,
@@ -40,6 +41,14 @@ export function AppLayout() {
     await signOut(); // signOut already navigates to /login via onAuthStateChange
   };
 
+  // drawer มือถือเปิดค้างตอนขยายจอเป็น desktop → ปิดเอง ไม่ให้ focus trap / scroll lock ค้างอยู่หลังจอที่มองไม่เห็น
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = (e: MediaQueryListEvent) => { if (e.matches) setSidebarOpen(false); };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
   const visibleNav = navItems.filter(item =>
     !item.roles || (profile && item.roles.includes(profile.role))
   );
@@ -80,7 +89,7 @@ export function AppLayout() {
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto py-1">
+      <nav aria-label="เมนูหลัก" className="flex-1 px-2 space-y-0.5 overflow-y-auto py-1">
         {visibleNav.map((item) => (
           <NavLink
             key={item.path}
@@ -133,24 +142,20 @@ export function AppLayout() {
         <SidebarContent />
       </aside>
 
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Mobile Sidebar */}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-200 md:hidden",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <SidebarContent />
-      </aside>
+      {/* Mobile drawer — Radix Dialog: focus trap, Esc ปิดได้, คืน focus ให้ปุ่มเมนู */}
+      <DialogPrimitive.Root open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/60 md:hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0" />
+          <DialogPrimitive.Content
+            aria-describedby={undefined}
+            className="fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border md:hidden duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left focus:outline-none"
+            style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+          >
+            <DialogPrimitive.Title className="sr-only">เมนูนำทาง</DialogPrimitive.Title>
+            <SidebarContent />
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -158,6 +163,9 @@ export function AppLayout() {
         <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
           <button
             onClick={() => setSidebarOpen(true)}
+            aria-label="เปิดเมนู"
+            aria-haspopup="dialog"
+            aria-expanded={sidebarOpen}
             className="p-1.5 rounded-lg hover:bg-muted transition-colors"
           >
             <Menu size={20} />
@@ -172,6 +180,7 @@ export function AppLayout() {
 
           <button
             onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'}
             className="p-1.5 rounded-lg hover:bg-muted transition-colors"
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -186,7 +195,7 @@ export function AppLayout() {
         </main>
 
         {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden border-t border-border bg-card shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <nav aria-label="เมนูลัด" className="md:hidden border-t border-border bg-card shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="flex justify-around py-1.5">
             {visibleNav.slice(0, 5).map((item) => {
               const isActive = location.pathname === item.path;

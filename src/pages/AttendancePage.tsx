@@ -458,6 +458,7 @@ function TeacherAttendanceView({ sessionId, onOverride }: { sessionId: string; o
                 </Badge>
                 <Button
                   size="sm" variant="ghost" className="h-6 w-6 p-0"
+                  aria-label={`แก้ไขสถานะของ ${student.full_name}`}
                   onClick={() => onOverride(student.id, student.full_name)}
                 >
                   <UserCheck size={13} />

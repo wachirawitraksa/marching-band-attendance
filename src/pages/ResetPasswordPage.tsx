@@ -68,9 +68,9 @@ export default function ResetPasswordPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label className="text-gray-300 text-sm">รหัสผ่านใหม่</Label>
+                  <Label htmlFor="reset-password-page-1" className="text-gray-300 text-sm">รหัสผ่านใหม่</Label>
                   <div className="relative">
-                    <Input
+                    <Input id="reset-password-page-1"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="อย่างน้อย 6 ตัวอักษร"
                       value={password}
@@ -80,6 +80,7 @@ export default function ResetPasswordPage() {
                     />
                     <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={showPassword}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200">
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -87,9 +88,9 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-gray-300 text-sm">ยืนยันรหัสผ่านใหม่</Label>
+                  <Label htmlFor="reset-password-page-2" className="text-gray-300 text-sm">ยืนยันรหัสผ่านใหม่</Label>
                   <div className="relative">
-                    <Input
+                    <Input id="reset-password-page-2"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="กรอกรหัสผ่านอีกครั้ง"
                       value={confirm}

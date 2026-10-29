@@ -343,9 +343,9 @@ export default function AdminPage() {
               </Alert>
             )}
             <div className="space-y-1">
-              <Label className="text-xs">ประเภทบัญชี</Label>
+              <Label htmlFor="admin-page-1" className="text-xs">ประเภทบัญชี</Label>
               <Select value={form.role} onValueChange={v => setForm(f => ({ ...f, role: v as Role }))}>
-                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="admin-page-1" className="h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="student">นักเรียน</SelectItem>
                   <SelectItem value="teacher">ครู</SelectItem>
@@ -355,29 +355,29 @@ export default function AdminPage() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="col-span-2 space-y-1">
-                <Label className="text-xs">ชื่อ-นามสกุล *</Label>
-                <Input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} className="h-9 text-sm" placeholder="ชื่อเต็ม" />
+                <Label htmlFor="admin-page-2" className="text-xs">ชื่อ-นามสกุล *</Label>
+                <Input id="admin-page-2" value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} className="h-9 text-sm" placeholder="ชื่อเต็ม" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">ชื่อเล่น</Label>
-                <Input value={form.nickname} onChange={e => setForm(f => ({ ...f, nickname: e.target.value }))} className="h-9 text-sm" placeholder="ไม่บังคับ" />
+                <Label htmlFor="admin-page-3" className="text-xs">ชื่อเล่น</Label>
+                <Input id="admin-page-3" value={form.nickname} onChange={e => setForm(f => ({ ...f, nickname: e.target.value }))} className="h-9 text-sm" placeholder="ไม่บังคับ" />
               </div>
               {form.role === 'student' && (
                 <div className="space-y-1">
-                  <Label className="text-xs">รหัสนักเรียน</Label>
-                  <Input value={form.student_id} onChange={e => setForm(f => ({ ...f, student_id: e.target.value }))} className="h-9 text-sm" />
+                  <Label htmlFor="admin-page-4" className="text-xs">รหัสนักเรียน</Label>
+                  <Input id="admin-page-4" value={form.student_id} onChange={e => setForm(f => ({ ...f, student_id: e.target.value }))} className="h-9 text-sm" />
                 </div>
               )}
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">อีเมล *</Label>
-              <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="h-9 text-sm" placeholder="user@email.com" />
+              <Label htmlFor="admin-page-5" className="text-xs">อีเมล *</Label>
+              <Input id="admin-page-5" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="h-9 text-sm" placeholder="user@email.com" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">รหัสผ่าน * (อย่างน้อย 6 ตัว)</Label>
+              <Label htmlFor="admin-page-6" className="text-xs">รหัสผ่าน * (อย่างน้อย 6 ตัว)</Label>
               <div className="relative">
-                <Input type={showPw ? 'text' : 'password'} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="h-9 text-sm pr-9" placeholder="••••••" />
-                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <Input id="admin-page-6" type={showPw ? 'text' : 'password'} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="h-9 text-sm pr-9" placeholder="••••••" />
+                <button type="button" onClick={() => setShowPw(!showPw)} aria-label={showPw ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={showPw} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
@@ -386,16 +386,16 @@ export default function AdminPage() {
               <>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <Label className="text-xs">ชั้น *</Label>
+                    <Label htmlFor="admin-page-7" className="text-xs">ชั้น *</Label>
                     <Select value={form.year_level} onValueChange={v => setForm(f => ({ ...f, year_level: v }))}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                      <SelectTrigger id="admin-page-7" className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                       <SelectContent>{[1,2,3,4,5,6].map(y => <SelectItem key={y} value={String(y)}>ม.{y}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">ห้องเรียน</Label>
+                    <Label htmlFor="admin-page-8" className="text-xs">ห้องเรียน</Label>
                     <Select value={form.classroom || '__none__'} onValueChange={v => setForm(f => ({ ...f, classroom: v === '__none__' ? '' : v }))}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                      <SelectTrigger id="admin-page-8" className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__none__">— ไม่ระบุ —</SelectItem>
                         {CLASSROOM_OPTIONS.map(c => <SelectItem key={c} value={c}>ม.{c}</SelectItem>)}
@@ -403,23 +403,23 @@ export default function AdminPage() {
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Section</Label>
+                    <Label htmlFor="admin-page-9" className="text-xs">Section</Label>
                     <Select value={form.section_id} onValueChange={v => setForm(f => ({ ...f, section_id: v, instrument_id: '' }))}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                      <SelectTrigger id="admin-page-9" className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                       <SelectContent>{sections.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">เครื่องดนตรี</Label>
+                  <Label htmlFor="admin-page-10" className="text-xs">เครื่องดนตรี</Label>
                   <Select value={form.instrument_id} onValueChange={v => setForm(f => ({ ...f, instrument_id: v }))}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                    <SelectTrigger id="admin-page-10" className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                     <SelectContent>{filteredInstruments.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="flex items-center justify-between p-2.5 bg-muted/30 rounded-lg">
-                  <Label className="text-sm cursor-pointer">อยู่ในคาบชุมนุม</Label>
-                  <Switch checked={form.is_in_club} onCheckedChange={v => setForm(f => ({ ...f, is_in_club: v }))} />
+                  <Label htmlFor="admin-page-11" className="text-sm cursor-pointer">อยู่ในคาบชุมนุม</Label>
+                  <Switch id="admin-page-11" checked={form.is_in_club} onCheckedChange={v => setForm(f => ({ ...f, is_in_club: v }))} />
                 </div>
               </>
             )}

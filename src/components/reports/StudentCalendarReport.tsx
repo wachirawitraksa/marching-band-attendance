@@ -150,7 +150,7 @@ export function StudentCalendarReport({ student, onClose }: Props) {
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={onClose} aria-label="ปิดรายงาน" className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -193,14 +193,14 @@ export function StudentCalendarReport({ student, onClose }: Props) {
 
           {/* Month navigator */}
           <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setViewDate(new Date(year, month - 1, 1))}>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="เดือนก่อนหน้า" onClick={() => setViewDate(new Date(year, month - 1, 1))}>
               <ChevronLeft size={16} />
             </Button>
             <span className="text-sm font-semibold">
               {thaiMonths[month]} {year + 543}
             </span>
             <Button
-              variant="ghost" size="sm" className="h-8 w-8 p-0"
+              variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="เดือนถัดไป"
               onClick={() => setViewDate(new Date(year, month + 1, 1))}
               disabled={isCurrentMonth}
             >

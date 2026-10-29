@@ -182,8 +182,8 @@ export function GPSSettingsManager() {
 
         <div className="space-y-3">
           <div>
-            <Label className="text-xs font-medium">ชื่อพื้นที่</Label>
-            <Input
+            <Label htmlFor="gpssettings-manager-1" className="text-xs font-medium">ชื่อพื้นที่</Label>
+            <Input id="gpssettings-manager-1"
               value={formData.name}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, name: e.target.value }))
@@ -195,8 +195,8 @@ export function GPSSettingsManager() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-medium">ละติจูด</Label>
-              <Input
+              <Label htmlFor="gpssettings-manager-2" className="text-xs font-medium">ละติจูด</Label>
+              <Input id="gpssettings-manager-2"
                 type="number"
                 step="0.000001"
                 value={formData.latitude}
@@ -211,8 +211,8 @@ export function GPSSettingsManager() {
               />
             </div>
             <div>
-              <Label className="text-xs font-medium">ลองจิจูด</Label>
-              <Input
+              <Label htmlFor="gpssettings-manager-3" className="text-xs font-medium">ลองจิจูด</Label>
+              <Input id="gpssettings-manager-3"
                 type="number"
                 step="0.000001"
                 value={formData.longitude}
@@ -229,8 +229,8 @@ export function GPSSettingsManager() {
           </div>
 
           <div>
-            <Label className="text-xs font-medium">รัศมีการอนุญาต (เมตร)</Label>
-            <Input
+            <Label htmlFor="gpssettings-manager-4" className="text-xs font-medium">รัศมีการอนุญาต (เมตร)</Label>
+            <Input id="gpssettings-manager-4"
               type="number"
               min="10"
               max="1000"

@@ -11,6 +11,7 @@ interface Props {
   onChange: (iso: string) => void;
   min?: string;             // ISO ค.ศ. "2026-06-02"
   className?: string;
+  id?: string;              // ผูกกับ <Label htmlFor> — ชี้ที่ช่อง "วัน"
   placeholder?: string;
   disabled?: boolean;
 }
@@ -43,7 +44,7 @@ function toISO(day: string, month: string, yearBE: string): string {
   return `${yCE}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
 
-export function ThaiDateInput({ value, onChange, min, className, disabled }: Props) {
+export function ThaiDateInput({ value, onChange, min, className, disabled, id }: Props) {
   const init = fromISO(value);
   const [day,     setDay]     = useState(init.day);
   const [month,   setMonth]   = useState(init.month);
@@ -74,10 +75,12 @@ export function ThaiDateInput({ value, onChange, min, className, disabled }: Pro
   const maxDay = daysInMonth(parseInt(month), yCE);
 
   return (
-    <div className={cn('flex gap-1.5 items-center', className)}>
+    <div role="group" className={cn('flex gap-1.5 items-center', className)}>
       {/* วัน */}
       <input
+        id={id}
         type="number"
+        aria-label="วัน"
         min={1}
         max={maxDay}
         placeholder="วัน"
@@ -103,6 +106,7 @@ export function ThaiDateInput({ value, onChange, min, className, disabled }: Pro
       {/* เดือน */}
       <select
         ref={monthRef}
+        aria-label="เดือน"
         value={month}
         disabled={disabled}
         onChange={e => {
@@ -130,6 +134,7 @@ export function ThaiDateInput({ value, onChange, min, className, disabled }: Pro
         <input
           ref={yearRef}
           type="number"
+          aria-label="ปี พ.ศ."
           min={minYearBE || 2567}
           max={2599}
           placeholder="ปี พ.ศ."

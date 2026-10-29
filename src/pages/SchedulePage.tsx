@@ -498,6 +498,7 @@ export default function SchedulePage() {
                           {isTeacher && !isPast && (
                             <Button size="sm" variant="ghost"
                               className="h-7 w-7 p-0 text-red-400 hover:bg-red-500/10 shrink-0"
+                              aria-label={`ลบ ${r.label}`}
                               onClick={() => setDeleteRange(r)}
                             >
                               <Trash2 size={13} />
@@ -559,6 +560,7 @@ export default function SchedulePage() {
                         {isTeacher && !isPast && (
                           <Button size="sm" variant="ghost"
                             className="h-8 w-8 p-0 text-red-400 hover:bg-red-500/10 shrink-0"
+                            aria-label="ลบวันหยุด"
                             onClick={() => handleDeleteHoliday(h.id)}
                           >
                             <Trash2 size={13} />
@@ -585,27 +587,27 @@ export default function SchedulePage() {
           </DialogHeader>
           <div className="space-y-3 py-1">
             <div className="space-y-1.5">
-              <Label className="text-xs">วันที่</Label>
-              <ThaiDateInput value={addForm.date}
+              <Label htmlFor="schedule-page-1" className="text-xs">วันที่</Label>
+              <ThaiDateInput id="schedule-page-1" value={addForm.date}
                 onChange={v => setAddForm(f => ({ ...f, date: v }))}
                 min={todayStr}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">เวลาเริ่ม</Label>
-                <Input type="time" value={addForm.start_time}
+                <Label htmlFor="schedule-page-2" className="text-xs">เวลาเริ่ม</Label>
+                <Input id="schedule-page-2" type="time" value={addForm.start_time}
                   onChange={e => setAddForm(f => ({ ...f, start_time: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">เวลาสิ้นสุด</Label>
-                <Input type="time" value={addForm.end_time}
+                <Label htmlFor="schedule-page-3" className="text-xs">เวลาสิ้นสุด</Label>
+                <Input id="schedule-page-3" type="time" value={addForm.end_time}
                   onChange={e => setAddForm(f => ({ ...f, end_time: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">รายละเอียด</Label>
-              <Input placeholder="เช่น ซ้อมใหญ่ก่อนแสดง"
+              <Label htmlFor="schedule-page-4" className="text-xs">รายละเอียด</Label>
+              <Input id="schedule-page-4" placeholder="เช่น ซ้อมใหญ่ก่อนแสดง"
                 value={addForm.description}
                 onChange={e => setAddForm(f => ({ ...f, description: e.target.value }))}
                 onKeyDown={e => e.key === 'Enter' && handleAddSession()}
@@ -634,14 +636,14 @@ export default function SchedulePage() {
           <div className="space-y-3 py-1">
             {holidayError && <Alert variant="destructive"><AlertDescription className="text-sm">{holidayError}</AlertDescription></Alert>}
             <div className="space-y-1.5">
-              <Label className="text-xs">วันที่</Label>
-              <ThaiDateInput value={holidayForm.date}
+              <Label htmlFor="schedule-page-5" className="text-xs">วันที่</Label>
+              <ThaiDateInput id="schedule-page-5" value={holidayForm.date}
                 onChange={v => setHolidayForm(f => ({ ...f, date: v }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">คำอธิบาย</Label>
-              <Input placeholder="เช่น วันหยุดนักขัตฤกษ์, สอบกลางภาค"
+              <Label htmlFor="schedule-page-6" className="text-xs">คำอธิบาย</Label>
+              <Input id="schedule-page-6" placeholder="เช่น วันหยุดนักขัตฤกษ์, สอบกลางภาค"
                 value={holidayForm.description}
                 onChange={e => setHolidayForm(f => ({ ...f, description: e.target.value }))}
                 onKeyDown={e => e.key === 'Enter' && handleAddHoliday()}
@@ -679,21 +681,21 @@ export default function SchedulePage() {
           <div className="space-y-3 py-1">
             {rangeError && <Alert variant="destructive"><AlertDescription className="text-sm">{rangeError}</AlertDescription></Alert>}
             <div className="space-y-1.5">
-              <Label className="text-xs">ชื่อช่วงเวลา</Label>
-              <Input placeholder="เช่น ปิดเทอม ภาค 1/2568, สอบปลายภาค"
+              <Label htmlFor="schedule-page-7" className="text-xs">ชื่อช่วงเวลา</Label>
+              <Input id="schedule-page-7" placeholder="เช่น ปิดเทอม ภาค 1/2568, สอบปลายภาค"
                 value={rangeForm.label}
                 onChange={e => setRangeForm(f => ({ ...f, label: e.target.value }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">วันเริ่มต้น</Label>
-              <ThaiDateInput value={rangeForm.start_date}
+              <Label htmlFor="schedule-page-8" className="text-xs">วันเริ่มต้น</Label>
+              <ThaiDateInput id="schedule-page-8" value={rangeForm.start_date}
                 onChange={v => setRangeForm(f => ({ ...f, start_date: v }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">วันสิ้นสุด</Label>
-              <ThaiDateInput value={rangeForm.end_date}
+              <Label htmlFor="schedule-page-9" className="text-xs">วันสิ้นสุด</Label>
+              <ThaiDateInput id="schedule-page-9" value={rangeForm.end_date}
                 onChange={v => setRangeForm(f => ({ ...f, end_date: v }))}
                 min={rangeForm.start_date}
               />

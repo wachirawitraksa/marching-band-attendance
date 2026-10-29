@@ -481,16 +481,16 @@ export default function StudentsPage() {
           <div className="space-y-3 py-1">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1">
-                <Label className="text-xs">ชื่อ-นามสกุล *</Label>
-                <Input
+                <Label htmlFor="students-page-1" className="text-xs">ชื่อ-นามสกุล *</Label>
+                <Input id="students-page-1"
                   value={editForm.full_name || ''}
                   onChange={e => setEditForm(f => ({ ...f, full_name: e.target.value }))}
                   className="h-9 text-sm"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">ชื่อเล่น</Label>
-                <Input
+                <Label htmlFor="students-page-2" className="text-xs">ชื่อเล่น</Label>
+                <Input id="students-page-2"
                   placeholder="ไม่บังคับ"
                   value={editForm.nickname || ''}
                   onChange={e => setEditForm(f => ({ ...f, nickname: e.target.value }))}
@@ -498,8 +498,8 @@ export default function StudentsPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">รหัสนักเรียน</Label>
-                <Input
+                <Label htmlFor="students-page-3" className="text-xs">รหัสนักเรียน</Label>
+                <Input id="students-page-3"
                   placeholder="ไม่บังคับ"
                   value={editForm.student_id || ''}
                   onChange={e => setEditForm(f => ({ ...f, student_id: e.target.value }))}
@@ -510,24 +510,24 @@ export default function StudentsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">ระดับชั้น</Label>
+                <Label htmlFor="students-page-4" className="text-xs">ระดับชั้น</Label>
                 <Select
                   value={editForm.year_level || ''}
                   onValueChange={v => setEditForm(f => ({ ...f, year_level: v }))}
                 >
-                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                  <SelectTrigger id="students-page-4" className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                   <SelectContent>
                     {[1,2,3,4,5,6].map(y => <SelectItem key={y} value={String(y)}>ม.{y}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">ห้องเรียน</Label>
+                <Label htmlFor="students-page-5" className="text-xs">ห้องเรียน</Label>
                 <Select
                   value={editForm.classroom || '__none__'}
                   onValueChange={v => setEditForm(f => ({ ...f, classroom: v === '__none__' ? '' : v }))}
                 >
-                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                  <SelectTrigger id="students-page-5" className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">— ไม่ระบุ —</SelectItem>
                     {CLASSROOM_OPTIONS.map(c => <SelectItem key={c} value={c}>ม.{c}</SelectItem>)}
@@ -535,12 +535,12 @@ export default function StudentsPage() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Section / กลุ่มเครื่อง</Label>
+                <Label htmlFor="students-page-6" className="text-xs">Section / กลุ่มเครื่อง</Label>
                 <Select
                   value={editForm.section_id || '__none__'}
                   onValueChange={v => setEditForm(f => ({ ...f, section_id: v === '__none__' ? '' : v, instrument_id: '' }))}
                 >
-                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                  <SelectTrigger id="students-page-6" className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">— ไม่ระบุ —</SelectItem>
                     {sections.map(s => (
@@ -554,12 +554,12 @@ export default function StudentsPage() {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">เครื่องดนตรี / ตำแหน่ง</Label>
+              <Label htmlFor="students-page-7" className="text-xs">เครื่องดนตรี / ตำแหน่ง</Label>
               <Select
                 value={editForm.instrument_id || '__none__'}
                 onValueChange={v => setEditForm(f => ({ ...f, instrument_id: v === '__none__' ? '' : v }))}
               >
-                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                <SelectTrigger id="students-page-7" className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— ไม่ระบุ —</SelectItem>
                   {filteredInstrumentsFor(editForm.section_id || '').map(i => (
@@ -629,8 +629,8 @@ export default function StudentsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1">
-                <Label className="text-xs">ชื่อ-นามสกุล *</Label>
-                <Input
+                <Label htmlFor="students-page-8" className="text-xs">ชื่อ-นามสกุล *</Label>
+                <Input id="students-page-8"
                   placeholder="ชื่อเต็ม"
                   value={addForm.full_name}
                   onChange={e => setAddForm(f => ({ ...f, full_name: e.target.value }))}
@@ -638,8 +638,8 @@ export default function StudentsPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">ชื่อเล่น</Label>
-                <Input
+                <Label htmlFor="students-page-9" className="text-xs">ชื่อเล่น</Label>
+                <Input id="students-page-9"
                   placeholder="ไม่บังคับ"
                   value={addForm.nickname}
                   onChange={e => setAddForm(f => ({ ...f, nickname: e.target.value }))}
@@ -647,8 +647,8 @@ export default function StudentsPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">รหัสนักเรียน</Label>
-                <Input
+                <Label htmlFor="students-page-10" className="text-xs">รหัสนักเรียน</Label>
+                <Input id="students-page-10"
                   placeholder="ไม่บังคับ"
                   value={addForm.student_id}
                   onChange={e => setAddForm(f => ({ ...f, student_id: e.target.value }))}
@@ -658,8 +658,8 @@ export default function StudentsPage() {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">อีเมล * (ใช้เข้าสู่ระบบ)</Label>
-              <Input
+              <Label htmlFor="students-page-11" className="text-xs">อีเมล * (ใช้เข้าสู่ระบบ)</Label>
+              <Input id="students-page-11"
                 type="email"
                 placeholder="student@email.com"
                 value={addForm.email}
@@ -669,8 +669,8 @@ export default function StudentsPage() {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">รหัสผ่าน * (อย่างน้อย 6 ตัว)</Label>
-              <Input
+              <Label htmlFor="students-page-12" className="text-xs">รหัสผ่าน * (อย่างน้อย 6 ตัว)</Label>
+              <Input id="students-page-12"
                 type="password"
                 placeholder="••••••"
                 value={addForm.password}
@@ -681,24 +681,24 @@ export default function StudentsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">ระดับชั้น *</Label>
+                <Label htmlFor="students-page-13" className="text-xs">ระดับชั้น *</Label>
                 <Select
                   value={addForm.year_level}
                   onValueChange={v => setAddForm(f => ({ ...f, year_level: v }))}
                 >
-                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                  <SelectTrigger id="students-page-13" className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                   <SelectContent>
                     {[1,2,3,4,5,6].map(y => <SelectItem key={y} value={String(y)}>ม.{y}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">ห้องเรียน</Label>
+                <Label htmlFor="students-page-14" className="text-xs">ห้องเรียน</Label>
                 <Select
                   value={addForm.classroom || '__none__'}
                   onValueChange={v => setAddForm(f => ({ ...f, classroom: v === '__none__' ? '' : v }))}
                 >
-                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                  <SelectTrigger id="students-page-14" className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">— ไม่ระบุ —</SelectItem>
                     {CLASSROOM_OPTIONS.map(c => <SelectItem key={c} value={c}>ม.{c}</SelectItem>)}
@@ -706,12 +706,12 @@ export default function StudentsPage() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Section / กลุ่มเครื่อง</Label>
+                <Label htmlFor="students-page-15" className="text-xs">Section / กลุ่มเครื่อง</Label>
                 <Select
                   value={addForm.section_id || '__none__'}
                   onValueChange={v => setAddForm(f => ({ ...f, section_id: v === '__none__' ? '' : v, instrument_id: '' }))}
                 >
-                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                  <SelectTrigger id="students-page-15" className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">— ไม่ระบุ —</SelectItem>
                     {sections.map(s => (
@@ -725,12 +725,12 @@ export default function StudentsPage() {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">เครื่องดนตรี / ตำแหน่ง</Label>
+              <Label htmlFor="students-page-16" className="text-xs">เครื่องดนตรี / ตำแหน่ง</Label>
               <Select
                 value={addForm.instrument_id || '__none__'}
                 onValueChange={v => setAddForm(f => ({ ...f, instrument_id: v === '__none__' ? '' : v }))}
               >
-                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
+                <SelectTrigger id="students-page-16" className="h-9 text-sm"><SelectValue placeholder="เลือก" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— ไม่ระบุ —</SelectItem>
                   {filteredInstrumentsFor(addForm.section_id).map(i => (

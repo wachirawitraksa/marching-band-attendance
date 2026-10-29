@@ -187,8 +187,8 @@ export function SemesterManager() {
             )}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">ปีการศึกษา (พ.ศ.)</Label>
-                <Input
+                <Label htmlFor="semester-manager-1" className="text-xs">ปีการศึกษา (พ.ศ.)</Label>
+                <Input id="semester-manager-1"
                   value={newYear}
                   onChange={e => setNewYear(e.target.value)}
                   placeholder="2568"
@@ -197,9 +197,9 @@ export function SemesterManager() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">ภาคเรียน</Label>
+                <Label htmlFor="semester-manager-2" className="text-xs">ภาคเรียน</Label>
                 <Select value={newSemester} onValueChange={v => setNewSemester(v as '1' | '2')}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="semester-manager-2" className="h-9 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">ภาคเรียนที่ 1</SelectItem>
                     <SelectItem value="2">ภาคเรียนที่ 2</SelectItem>
@@ -209,8 +209,8 @@ export function SemesterManager() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">วันเริ่มต้น</Label>
-                <Input
+                <Label htmlFor="semester-manager-3" className="text-xs">วันเริ่มต้น</Label>
+                <Input id="semester-manager-3"
                   type="date"
                   value={newStart}
                   onChange={e => setNewStart(e.target.value)}
@@ -218,8 +218,8 @@ export function SemesterManager() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">วันสิ้นสุด (ไม่บังคับ)</Label>
-                <Input
+                <Label htmlFor="semester-manager-4" className="text-xs">วันสิ้นสุด (ไม่บังคับ)</Label>
+                <Input id="semester-manager-4"
                   type="date"
                   value={newEnd}
                   onChange={e => setNewEnd(e.target.value)}

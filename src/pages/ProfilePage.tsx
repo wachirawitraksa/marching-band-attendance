@@ -338,9 +338,9 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label>ชื่อเล่น</Label>
+            <Label htmlFor="profile-page-1">ชื่อเล่น</Label>
             <div className="flex gap-2">
-              <Input
+              <Input id="profile-page-1"
                 placeholder="ชื่อเล่น (ไม่บังคับ)"
                 value={nickname}
                 onChange={e => setNickname(e.target.value)}
@@ -377,9 +377,9 @@ export default function ProfilePage() {
           )}
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label>รหัสผ่านใหม่</Label>
+              <Label htmlFor="profile-page-2">รหัสผ่านใหม่</Label>
               <div className="relative">
-                <Input
+                <Input id="profile-page-2"
                   type={showPw ? 'text' : 'password'}
                   placeholder="อย่างน้อย 6 ตัวอักษร"
                   value={newPw}
@@ -389,6 +389,8 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setShowPw(p => !p)}
+                  aria-label={showPw ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                  aria-pressed={showPw}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -396,8 +398,8 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>ยืนยันรหัสผ่านใหม่</Label>
-              <Input
+              <Label htmlFor="profile-page-3">ยืนยันรหัสผ่านใหม่</Label>
+              <Input id="profile-page-3"
                 type={showPw ? 'text' : 'password'}
                 placeholder="กรอกอีกครั้ง"
                 value={confirmPw}
