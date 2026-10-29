@@ -24,11 +24,11 @@
 
 | เช็คชื่อ | อัตโนมัติ | ข้อมูลเชิงลึก |
 |---|---|---|
-| ตรวจรัศมี GPS หรือสแกน QR ที่ครูแสดง พร้อมตรวจช่วงเวลาซ้อม | สร้างรอบซ้อมทุกคืน บันทึกขาดให้อัตโนมัติ เคารพวันหยุด | ผลเช็คชื่อสด streak และ badge ปฏิทินรายคน รายงาน PDF ภาษาไทย |
+| กดเช็คชื่อปุ่มเดียวด้วย GPS หรือสแกน QR เต็มจอที่ครูแสดง ตรวจช่วงเวลาซ้อมทั้งสองทาง | สร้างรอบซ้อมทุกคืน บันทึกขาดให้อัตโนมัติ เคารพวันหยุดและข้อยกเว้น ร.ด. | รายชื่อสดแยกตาม Section คำขอลาที่ครูอนุมัติ แดชบอร์ดรายรอบ รายงาน PDF ภาษาไทย |
 
 | ชั้น | เทคโนโลยี |
 |---|---|
-| **Frontend** | React 18 · TypeScript · Vite · Tailwind CSS + shadcn/ui (Radix) · Zustand · TanStack Query · Recharts · `@react-pdf/renderer` · `html5-qrcode` · `qrcode.react` |
+| **Frontend** | React 18 · TypeScript · Vite · Tailwind CSS + shadcn/ui (Radix) · Zustand · TanStack Query · Recharts · `@react-pdf/renderer` · `qrcode.react` |
 | **Backend** | Supabase — PostgreSQL · Auth · Realtime · Storage · Row Level Security · `pg_cron` |
 | **Hosting** | Netlify (static SPA) |
 
@@ -45,7 +45,7 @@
    - [2. สร้างรอบซ้อมรายวันอัตโนมัติ](#2-สร้างรอบซ้อมรายวันอัตโนมัติ)
    - [3. เช็คชื่อด้วย GPS](#3-เช็คชื่อด้วย-gps-นักเรียน)
    - [4. เช็คชื่อด้วย QR Code](#4-เช็คชื่อด้วย-qr-code-นักเรียน)
-   - [5. แจ้งเหตุผลไม่เข้าร่วม (ลา)](#5-แจ้งเหตุผลไม่เข้าร่วม-ลา)
+   - [5. คำขอลา (ครูอนุมัติ)](#5-คำขอลา-ครูอนุมัติ)
    - [6. ระบบบันทึกขาดอัตโนมัติ](#6-ระบบบันทึกขาดอัตโนมัติ)
    - [7. ครูแก้ไขสถานะ (Override)](#7-ครูแก้ไขสถานะ-override)
    - [8. Streak และ Badge](#8-streak-และ-badge)
@@ -63,17 +63,29 @@
 ## คุณสมบัติ
 
 **นักเรียน**
-- เช็คชื่อด้วย GPS (ต้องอยู่ในรัศมีที่ตั้งค่าไว้จากห้องดนตรี)
+- กดเช็คชื่อปุ่มเดียว ระบบหาตำแหน่งเองและเช็คชื่อให้ถ้าอยู่ในรัศมีที่ตั้งค่าไว้จากห้องดนตรี
+  - ก่อนเปิดรอบ ปุ่มบอกเวลาเปิดเช็คชื่อ
+  - เลยเวลามาปกติแล้ว ปุ่มเตือนว่าจะนับเป็นสาย
+  - ใต้ปุ่มบอกว่าอยู่ในพื้นที่ หรือห่างออกไปกี่เมตร
 - เช็คชื่อด้วยการสแกน QR Code ที่ครูแสดง (ระบบตรวจ GPS ด้วย)
-- แจ้งเหตุผลที่ไม่สามารถเข้าร่วมได้ (สถานะเป็น *ลา*)
+- ส่งคำขอลาพร้อมเหตุผล สถานะเป็น *ลา* เมื่อครูอนุมัติแล้วเท่านั้น
+- แดชบอร์ด: รอบซ้อมวันนี้พร้อมสิ่งที่ทำได้ตอนนี้ การ์ดเช็คชื่อด่วน และสถิติของตัวเอง
 - ดูประวัติการเช็คชื่อและปฏิทินส่วนตัว
 - สะสม streak และ badge จากการมาซ้อมต่อเนื่อง
 - อัปโหลดรูปโปรไฟล์ เปลี่ยน/รีเซ็ตรหัสผ่าน
 
 **ครู**
-- ดูผลเช็คชื่อรายรอบแบบเรียลไทม์ (Supabase Realtime)
-- แก้ไขสถานะของนักเรียนพร้อมบันทึกหมายเหตุ
-- แสดง QR Code ประจำรอบสำหรับเช็คชื่อ
+- แดชบอร์ดมีการ์ดของแต่ละรอบวันนี้:
+  - มาแล้ว / ที่ต้องมา และสาย
+  - "ยังไม่เช็ค" ตอนเปิด และ "ขาด" หลังปิด
+  - กดไปที่รายชื่อของรอบนั้นได้เลย
+- รายชื่อสดของแต่ละรอบ (Supabase Realtime):
+  - แยกตาม Section ("Brass 11/32")
+  - ตัวกรอง (ทั้งหมด / ยังไม่มา / มาแล้ว / ลา) และช่องค้นหา
+  - คนที่ต้องจัดการขึ้นก่อน
+- อนุมัติหรือไม่อนุมัติคำขอลา
+- แก้ไขสถานะนักเรียน dialog เริ่มที่สถานะปัจจุบัน และกดย้อนกลับได้จาก toast
+- หน้าจอ QR เต็มจอ พร้อมตัวนับ "มาแล้ว / ที่ต้องมา" แบบสด และรายชื่อคนล่าสุด
 - เพิ่มรอบซ้อมพิเศษ จัดการวันหยุดและช่วงปิดเทอม
 - จัดการรายชื่อนักเรียนและเลื่อนชั้นปีการศึกษา (ปี +1, ม.6 → จบการศึกษา)
 - ดูรายงานทุก Section ปฏิทินรายบุคคล และส่งออก PDF
@@ -88,6 +100,7 @@
 - `pg_cron` สร้างรอบซ้อมของวันถัดไปทุกคืน
 - นักเรียนที่ไม่เช็คชื่อจะถูกบันทึกเป็น *ขาด* อัตโนมัติเมื่อหมดเวลา
 - Trigger ในฐานข้อมูลคำนวณ streak และ badge ใหม่ทุกครั้งที่ข้อมูลเช็คชื่อเปลี่ยน
+- หน้าเว็บตรวจสถานะตามเวลาใหม่ทุก 30 วินาที ปุ่มเช็คชื่อจึงเปิดเองโดยไม่ต้องรีเฟรช
 
 ---
 
@@ -97,9 +110,8 @@
 flowchart LR
     subgraph Client["Browser / PWA (React + Vite)"]
         UI["Pages<br/>Dashboard · Attendance · Schedule<br/>Reports · Students · Admin · Profile"]
-        Hooks["Hooks<br/>useAuth · useAttendance · useGPS<br/>useTerm · useSupabaseQueries"]
+        Hooks["Hooks<br/>useAuth · useAttendance · useGPS · useLeaveRequests<br/>useTerm · useNow · useSupabaseQueries"]
         Store["Zustand authStore<br/>(user, profile, theme — เก็บถาวร)"]
-        SW["Service Worker<br/>cache app shell · push"]
         UI --> Hooks --> Store
     end
 
@@ -128,6 +140,11 @@ flowchart LR
 
 เบราว์เซอร์คุยกับ Supabase โดยตรงด้วย anon key (public) **การตรวจสิทธิ์ทั้งหมดทำที่ Row Level Security ในฐานข้อมูล** ไม่ได้อาศัยฝั่งหน้าเว็บ การป้องกัน route ใน React (`ProtectedRoute`, `AdminRoute`) มีไว้เพื่อประสบการณ์ใช้งานเท่านั้น
 
+แต่ละหน้าแยก chunk และโหลดเมื่อเข้าถึง `@react-pdf/renderer` โหลดตอนกดส่งออก PDF เท่านั้น ถ้า chunk ของหน้าโหลดไม่ได้หลัง deploy จะมีหน้าให้กดลองอีกครั้ง
+
+> [!NOTE]
+> `public/sw.js` (cache app shell และ push notification) **ยังไม่ถูก register** ในแอป การทำงานออฟไลน์และ push จึงยังไม่ทำงาน ส่วน manifest ยังใช้ *Add to Home Screen* ได้
+
 ---
 
 ## บทบาทและสิทธิ์
@@ -136,7 +153,9 @@ flowchart LR
 |---|:--:|:--:|:--:|
 | เช็คชื่อของตัวเอง (GPS / QR) | ได้ | ได้ | ได้ |
 | ดูประวัติ streak badge ของตัวเอง | ได้ | ได้ | ได้ |
+| ส่งคำขอลาของตัวเอง (พร้อมเหตุผล) | ได้ | — | — |
 | ดูการเช็คชื่อของทุกคน | ไม่ได้ | ได้ | ได้ |
+| อนุมัติ / ไม่อนุมัติคำขอลา | ไม่ได้ | ได้ | ได้ |
 | แก้ไข/เพิ่มสถานะให้คนอื่น | ไม่ได้ | ได้ | ได้ |
 | แสดง QR Code ประจำรอบ | ไม่ได้ | ได้ | ได้ |
 | จัดการรอบซ้อม วันหยุด ปิดเทอม | ไม่ได้ | ได้ | ได้ |
@@ -158,7 +177,7 @@ Route ของหน้าเว็บ:
 
 ## กติกาการเช็คชื่อ
 
-เวลาทั้งหมดเป็น **เวลาประเทศไทย (Asia/Bangkok)** กติกาอยู่ที่เดียวในฝั่งหน้าเว็บ (`ATTENDANCE_RULES` ใน [`src/lib/utils.ts`](src/lib/utils.ts)) และมีฟังก์ชัน SQL ที่ใช้เวลาเดียวกัน
+เวลาทั้งหมดเป็น **เวลาประเทศไทย (Asia/Bangkok)** กติกาอยู่ที่เดียวในฝั่งหน้าเว็บ (`ATTENDANCE_RULES` ใน [`src/lib/utils.ts`](src/lib/utils.ts)) และมีฟังก์ชัน SQL ที่ใช้เวลาเดียวกัน `getAttendanceWindowState()` (ก่อนเปิด / เปิด / หมดเวลา) เป็นจุดตรวจเดียวที่แดชบอร์ด หน้าเช็คชื่อ และการบันทึกเช็คชื่อใช้ร่วมกัน หน้าตารางซ้อมสร้างข้อความ "มาปกติถึง / สายถึง" จากกติกาเดียวกัน และ `lateUntil` ต้องตรงกับเวลาของ cron `auto_mark_absent`
 
 | รอบ | วัน | เริ่มรับเช็คชื่อ | มาปกติถึง | สายถึง | ขาดหลัง |
 |---|---|---|---|---|---|
@@ -263,7 +282,7 @@ sequenceDiagram
 
     S->>P: กด "เช็คชื่อ"
     P->>G: getCurrentPosition()
-    alt cache ไม่เกิน 5 นาที
+    alt cache ไม่เกิน 5 นาที และครั้งก่อนอยู่ในพื้นที่
         G-->>P: ตำแหน่งจาก cache
     else
         G->>B: getCurrentPosition(highAccuracy, timeout 30 วิ)
@@ -300,6 +319,8 @@ sequenceDiagram
 
 หมายเหตุ:
 
+- มีปุ่มเดียว ใต้ปุ่มแสดงผลระยะห่าง และเตือนเมื่อการเช็คชื่อจะนับเป็นสาย การ์ดเช็คชื่อด่วนในแดชบอร์ดใช้ขั้นตอนเดียวกัน
+- ใช้ตำแหน่งจาก cache ซ้ำเฉพาะถ้าครั้งก่อนอยู่ในพื้นที่ นักเรียนที่เดินเข้าพื้นที่แล้วกดใหม่จึงได้ตำแหน่งใหม่
 - พิกัดและรัศมีมาจากตาราง `gps_settings` (แอดมินแก้ไขได้) ถ้าโหลดไม่ได้จะใช้ค่าเริ่มต้นที่ฝังในโค้ด
 - การนับ accuracy เข้ามาช่วยไม่ให้ปฏิเสธนักเรียนที่ยืนอยู่ขอบรัศมีขณะที่ GPS คลาดเคลื่อน
 - ช่วงเวลาและสถานะคำนวณจาก **นาฬิกาของเครื่องผู้ใช้ที่แปลงเป็นเวลาไทย** ส่วน policy ในฐานข้อมูลตรวจเพียงว่า `student_id = auth.uid()` ไม่ได้ตรวจเวลาซ้ำ ดังนั้นให้มองว่า GPS/QR ป้องกันการใช้งานผิดพลาดทั่วไป ไม่ใช่ระบบกันการปลอมแปลงเต็มรูปแบบ
@@ -308,11 +329,11 @@ sequenceDiagram
 
 ### 4. เช็คชื่อด้วย QR Code (นักเรียน)
 
-ครูกดปุ่ม **QR Code** ที่การ์ดของรอบนั้นในหน้า `/attendance` ระบบสร้าง QR เป็น `https://<host>/qr/<qr_token>` นักเรียนสแกนด้วยกล้องมือถือ แล้วหน้าเว็บจะเปิดขึ้น
+ครูกดปุ่ม **เปิด QR เช็คชื่อ** ที่การ์ดของรอบนั้นในหน้า `/attendance` หน้าจอเต็ม (`QRPresenter`) แสดง QR ขนาดใหญ่ของ `https://<host>/qr/<qr_token>` ตัวนับ "มาแล้ว / ที่ต้องมา" แบบสด รายชื่อ 5 คนล่าสุด และคำเตือนถ้ารอบยังไม่เปิดหรือหมดเวลา ครูสลับเป็นเต็มจอเบราว์เซอร์เพื่อฉายขึ้นจอได้ นักเรียนสแกนด้วยกล้องมือถือ แล้วหน้าเว็บจะเปิดขึ้น
 
 ```mermaid
 flowchart TD
-    T["ครู: การ์ดรอบซ้อม → QR Code<br/>QRCodeSVG(origin + /qr/ + qr_token)"] --> Scan["นักเรียนสแกนด้วยกล้องมือถือ"]
+    T["ครู: การ์ดรอบซ้อม → QR เต็มจอ<br/>QRCodeSVG(origin + /qr/ + qr_token)"] --> Scan["นักเรียนสแกนด้วยกล้องมือถือ"]
     Scan --> Open["เปิด /qr/:token (public route)"]
     Open --> Auth{"เข้าสู่ระบบแล้ว?"}
     Auth -- ไม่ --> NA["not_auth → ปุ่มไปหน้า /login"]
@@ -336,22 +357,23 @@ QR token พิสูจน์ว่านักเรียนถือโค�
 
 ---
 
-### 5. แจ้งเหตุผลไม่เข้าร่วม (ลา)
+### 5. คำขอลา (ครูอนุมัติ)
+
+นักเรียนตั้งสถานะตัวเองเป็น "ลา" ไม่ได้ ต้องส่งคำขอพร้อมเหตุผล แล้วแจ้งครูให้กดอนุมัติในระบบ
 
 ```mermaid
 flowchart TD
-    S["นักเรียนเปิดรอบที่ยังไม่ได้เช็คชื่อ"] --> Btn["กด 'แจ้งเหตุผล'"]
-    Btn --> V{"ช่องเหตุผลว่าง?"}
-    V -- ใช่ --> Err["Toast: กรุณากรอกเหตุผล"]
-    V -- ไม่ --> Ex{"มี record ของ<br/>(session, student) แล้ว?"}
-    Ex -- ใช่ --> U["UPDATE reason, status = 'excused'"]
-    Ex -- ไม่ --> I["INSERT status = 'excused', reason"]
-    U --> Re["refetch ข้อมูลของฉัน"]
-    I --> Re
-    Re --> Rt["Realtime ส่งการเปลี่ยนแปลงไปหน้าจอครู"]
+    S["นักเรียน: รอบของวันนี้<br/>ที่ยังไม่เช็ค หรือถูกบันทึกขาด"] --> Btn["กด 'ขอลา' พิมพ์เหตุผล"]
+    Btn --> Up["UPSERT leave_requests<br/>status = 'pending'"]
+    Up --> P["การ์ด: 'รอครูอนุมัติ'<br/>แก้ไขหรือยกเลิกได้"]
+    Up --> RT["Realtime → รายชื่อของครู<br/>'ขอลา N' + ป้ายที่นักเรียน"]
+    RT --> T{"ครูเปิด dialog แก้สถานะ"}
+    T -- อนุมัติ --> A["UPSERT attendance_records<br/>status = 'excused', reason,<br/>teacher_override = true"]
+    A --> D1["leave_requests.status = 'approved'"]
+    T -- ไม่อนุมัติ --> D2["leave_requests.status = 'rejected'<br/>สถานะเช็คชื่อคงเดิม"]
 ```
 
-record สถานะ *ลา* จะไม่ถูกงานบันทึกขาดอัตโนมัติเขียนทับ เพราะงานนั้นเพิ่มแถวเฉพาะนักเรียนที่ยังไม่มี record เลย
+RLS (migration `024`) ให้นักเรียนเพิ่ม แก้ และลบได้เฉพาะคำขอของตัวเองที่ยัง **รออนุมัติ** การอนุมัติหรือไม่อนุมัติทำได้เฉพาะครูและแอดมิน record สถานะ *ลา* ที่อนุมัติแล้วจะไม่ถูกงานบันทึกขาดอัตโนมัติเขียนทับ เพราะงานนั้นเพิ่มแถวเฉพาะนักเรียนที่ยังไม่มี record
 
 ---
 
@@ -368,7 +390,7 @@ flowchart TD
         Q1 --> Ins["INSERT absent ให้นักเรียนที่ active ไม่จบการศึกษา<br/>is_in_club = true และยังไม่มี record<br/>ON CONFLICT DO NOTHING"]
     end
 
-    subgraph Client["ฝั่งหน้าเว็บ — AttendancePage (ทำเท่าที่ทำได้)"]
+    subgraph Client["ฝั่งหน้าเว็บ — AttendancePage เฉพาะบัญชีครู (ทำเท่าที่ทำได้)"]
         Tm["ตอนเปิดหน้า + ทุก 60 วินาที"] --> MA["markAbsentOverdue(today)"]
         MA --> Over["รอบที่เลยช่วงเวลาแล้ว"]
         Over --> Stu["นักเรียน active ไม่จบการศึกษาทั้งหมด"]
@@ -379,7 +401,7 @@ flowchart TD
     Ups --> TG
 ```
 
-- งาน cron เป็นแหล่งข้อมูลหลัก ส่วนการกวาดฝั่งหน้าเว็บช่วยให้ครูเห็นข้อมูลล่าสุดทันทีหลังหมดเวลา
+- งาน cron เป็นแหล่งข้อมูลหลัก ส่วนการกวาดฝั่งหน้าเว็บช่วยให้ครูเห็นข้อมูลล่าสุดทันทีหลังหมดเวลา และรันเฉพาะบัญชีครู เพราะ RLS ให้นักเรียนอ่านได้แค่แถวของตัวเอง
 - งาน SQL จะข้ามนักเรียนที่ `is_in_club = false` (ดู [ข้อยกเว้น ร.ด.](#9-ข้อยกเว้น-รด-บ่ายวันพฤหัส))
 
 ---
@@ -395,16 +417,21 @@ sequenceDiagram
     actor S as นักเรียน
 
     T->>P: เปิดรายชื่อของรอบ (useAllAttendance, realtime)
-    T->>P: เลือกนักเรียน → Override
+    T->>P: เลือกนักเรียน → dialog แก้สถานะ
+    Note over P: dialog เลือกสถานะปัจจุบันไว้และแสดงให้เห็น<br/>ปุ่มบันทึกกดไม่ได้จนกว่าจะเปลี่ยนสถานะหรือหมายเหตุ
     T->>P: เลือกสถานะ (present / late / absent / excused) + หมายเหตุ
-    P->>DB: UPSERT attendance_records<br/>teacher_override = true, override_by = teacher.id,<br/>override_note, check_in_time = now() ถ้า present ไม่งั้น null
+    P->>DB: UPSERT attendance_records<br/>teacher_override = true, override_by = teacher.id,<br/>override_note, เก็บ check_in_time เดิมถ้า present/late<br/>(ใช้ now() เฉพาะตอนยังไม่มี)
+    P-->>T: Toast "ชื่อ: เดิม → ใหม่" พร้อมปุ่มย้อนกลับ
+    opt ย้อนกลับ
+        P->>DB: คืนค่าแถวเดิม (หรือลบทิ้งถ้าก่อนหน้านี้ไม่มี)
+    end
     Note over DB: RLS อนุญาต role IN ('admin','teacher')<br/>เพิ่ม/แก้แถวของนักเรียนคนอื่น
     DB->>DB: trigger → recalc_student_streak()
     DB-->>P: Realtime event → รายชื่อรีเฟรช
     DB-->>S: Realtime event → รายการของนักเรียนรีเฟรช
 ```
 
-แถวที่ถูก override จะเก็บ `teacher_override`, `override_by` และ `override_note` เพื่อให้ตรวจสอบย้อนหลังได้
+แถวที่ถูก override จะเก็บ `teacher_override`, `override_by` และ `override_note` เพื่อให้ตรวจสอบย้อนหลังได้ ถ้านักเรียนมีคำขอลารออนุมัติ dialog เดียวกันจะแสดงคำขอพร้อมปุ่มอนุมัติ / ไม่อนุมัติ
 
 ---
 
@@ -446,6 +473,7 @@ flowchart TD
     X --> X3["Web: filterOutRdExempt()<br/>ตัดออกจากสถิติ"]
     X --> X4["PDF: ช่องแสดง 'นศท.'<br/>แทนสถานะจริง"]
     X --> X5["auto_mark_absent()<br/>ไม่เพิ่ม absent ให้"]
+    X --> X6["Web: splitRdExempt()<br/>ไม่นับในตัวเลขแดชบอร์ด<br/>รายชื่อ และหน้าจอ QR"]
 ```
 
 กติกานี้อยู่ใน [`src/lib/attendanceExemption.ts`](src/lib/attendanceExemption.ts) และสะท้อนใน migration `022` ถ้าอนาคตมี `session_type` เฉพาะสำหรับรอบนี้ ให้ใส่ใน `THURSDAY_AFTERNOON_SESSION_TYPES` (ฝั่งเว็บ) และแก้เงื่อนไข `WHERE` ของ view (ฝั่ง SQL) เพื่อเปลี่ยนจากการเดาด้วยเวลามาใช้ชนิดรอบแทน
@@ -509,7 +537,7 @@ flowchart TD
     Agg --> Pdf["ExportReportDialog → AttendanceReportPDF<br/>@react-pdf/renderer ฟอนต์ Sarabun<br/>getPdfCellStatus() ใส่ 'นศท.' ในช่องที่ได้รับยกเว้น"]
 ```
 
-ฟอนต์ไทย (Sarabun, Pridi) อยู่ใน `public/fonts/` เพื่อให้ PDF แสดงภาษาไทยได้โดยไม่ต้องโหลดจากภายนอก
+ฟอนต์ Sarabun อยู่ใน `public/fonts/` เพื่อให้ PDF แสดงภาษาไทยได้โดยไม่ต้องโหลดจากภายนอก หัวตารางพิมพ์ซ้ำทุกหน้า และคำอธิบายสัญลักษณ์อยู่ท้ายทุกหน้า
 
 ---
 
@@ -527,6 +555,8 @@ erDiagram
     practice_sessions }o--o| academic_terms : "term_id"
     practice_sessions ||--o| streaks : "last_session_id (set null)"
     badges ||--o{ user_badges : "badge_id"
+    profiles ||--o{ leave_requests : "student_id"
+    practice_sessions ||--o{ leave_requests : "session_id (cascade)"
 
     profiles {
         uuid id PK "= auth.users.id"
@@ -575,11 +605,18 @@ erDiagram
         text code UK
         int threshold
     }
+    leave_requests {
+        uuid id PK
+        text reason
+        text status "pending | approved | rejected"
+        uuid decided_by
+        timestamptz decided_at
+    }
 ```
 
 ตารางอื่น: `holidays`, `holiday_ranges`, `gps_settings`, `schedule_overrides`, `notifications` / Storage bucket: `profile-pictures` (อ่านได้สาธารณะ เขียนได้เมื่อเข้าสู่ระบบ) / View: `effective_attendance_records`
 
-Constraint สำคัญ: `UNIQUE(date, session_type)` ของรอบซ้อม และ `UNIQUE(session_id, student_id)` ของการเช็คชื่อ ทำให้ทุกการเขียนเป็น upsert ที่รันซ้ำได้
+Constraint สำคัญ: `UNIQUE(date, session_type)` ของรอบซ้อม และ `UNIQUE(session_id, student_id)` ของการเช็คชื่อและคำขอลา ทำให้ทุกการเขียนเป็น upsert ที่รันซ้ำได้
 
 ### Migrations
 
@@ -606,6 +643,7 @@ Constraint สำคัญ: `UNIQUE(date, session_type)` ของรอบซ�
 | `021_streaks_badges` | ตาราง streak/badge ฟังก์ชัน trigger RLS |
 | `022_thursday_rd_exemption` | view `effective_attendance_records` + ปรับ streak |
 | `023_fix_streak_session_fk` | `ON DELETE SET NULL` ให้ `streaks.last_session_id` |
+| `024_leave_requests` | ตาราง `leave_requests`, RLS, realtime (จำเป็นตั้งแต่ v1.1.0) |
 
 > [!IMPORTANT]
 > หลายไฟล์นิยามฟังก์ชัน `create_daily_sessions()` ซ้ำ ไฟล์เลขสูงกว่าจะทับไฟล์ก่อนหน้า จึงควรรันครบทั้งชุด ไม่เลือกรันบางไฟล์
@@ -620,26 +658,29 @@ src/
 ├── main.tsx
 ├── components/
 │   ├── admin/                      # SemesterManager, GPSSettingsManager
+│   ├── attendance/QRPresenter.tsx  # QR เต็มจอพร้อมตัวนับสด
 │   ├── layout/AppLayout.tsx        # Layout หลัก เมนู สลับธีม
 │   ├── reports/                    # StudentCalendarReport, ExportReportDialog, AttendanceReportPDF
 │   ├── CheckInSuccessAnimation.tsx
 │   └── ui/                         # shadcn/ui components
 ├── hooks/
 │   ├── useAuth.ts                  # เข้า/ออกจากระบบ รหัสผ่าน
-│   ├── useAttendance.ts            # checkIn, qrCheckIn, submitReason, markAbsentOverdue, realtime
-│   ├── useGPS.ts                   # Geolocation, haversine, cache 5 นาที
+│   ├── useAttendance.ts            # checkIn, qrCheckIn, markAbsentOverdue, รายชื่อ realtime
+│   ├── useLeaveRequests.ts         # คำขอลา: ส่ง ยกเลิก อนุมัติ / ไม่อนุมัติ
+│   ├── useNow.ts                   # re-render ทุก 30 วินาทีสำหรับ UI ที่ขึ้นกับเวลา
+│   ├── useGPS.ts                   # Geolocation, haversine, cache 5 นาที (เฉพาะตอนอยู่ในพื้นที่)
 │   ├── useGPSSettings.ts           # อ่าน gps_settings
 │   ├── useTerm.ts                  # ภาคเรียน
 │   └── useSupabaseQueries.ts       # React Query hooks (รอบ, streak, badge, รายงาน)
 ├── lib/
 │   ├── supabase.ts                 # Supabase client
-│   ├── utils.ts                    # ATTENDANCE_RULES, ฟังก์ชันสถานะ/ช่วงเวลา, เวลาไทย, haversine
-│   └── attendanceExemption.ts      # กติกายกเว้น ร.ด. บ่ายวันพฤหัส
+│   ├── utils.ts                    # ATTENDANCE_RULES, getAttendanceWindowState, getErrorMessage, เวลาไทย
+│   └── attendanceExemption.ts      # กติกายกเว้น ร.ด. บ่ายวันพฤหัส, splitRdExempt
 ├── pages/                          # Dashboard, Attendance, QRCheckIn, Schedule, Reports,
 │                                   # Students, Admin, Profile, Login, Forgot/ResetPassword
 ├── store/authStore.ts              # Zustand (user, profile, theme) เก็บถาวร
 └── types/index.ts
-public/                             # PWA manifest, service worker, ไอคอน, ฟอนต์ไทย
+public/                             # PWA manifest, service worker (ยังไม่ register), ไอคอน, ฟอนต์ไทย
 supabase/migrations/                # SQL รันตามลำดับตัวเลข
 ```
 
@@ -655,7 +696,7 @@ supabase/migrations/                # SQL รันตามลำดับต�
 ไปที่ **Database → Extensions** แล้วเปิด **`pg_cron`** (จำเป็นสำหรับสร้างรอบรายคืนและบันทึกขาดอัตโนมัติ)
 
 ### 3. รัน Migration
-เปิด **SQL Editor** แล้วรันทุกไฟล์ใน `supabase/migrations/` **ตามลำดับตัวเลข** (`001` → `023`)
+เปิด **SQL Editor** แล้วรันทุกไฟล์ใน `supabase/migrations/` **ตามลำดับตัวเลข** (`001` → `024`)
 
 ### 4. ตั้งค่า Authentication
 1. **Authentication → Providers → Email**: ปิด "Confirm email" หากแอดมินเป็นคนสร้างบัญชีและไม่ต้องการยืนยันอีเมล
@@ -684,7 +725,7 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-สคริปต์อื่น: `npm run build` (ตรวจ type + build), `npm run preview`, `npm run lint`
+สคริปต์อื่น: `npm run build` (ตรวจ type + build), `npm run preview` ส่วน `npm run lint` ตอนนี้ยังรันไม่ได้ เพราะ ESLint 9 ต้องมี `eslint.config.js` ซึ่งโปรเจกต์ยังไม่มี
 
 > [!WARNING]
 > ใส่เฉพาะ **anon** key ในฝั่งหน้าเว็บ ห้ามใส่ `service_role` key ใน `.env`

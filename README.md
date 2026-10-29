@@ -24,11 +24,11 @@ A mobile-first web app (installable PWA) that lets marching band students check 
 
 | Check in | Automation | Insight |
 |---|---|---|
-| GPS radius check or teacher-shown QR code, both validated against the rehearsal time window | Sessions generated nightly, absentees marked automatically, holidays respected | Live roster, streaks and badges, per-student calendar, Thai PDF reports |
+| One-tap GPS check-in, or scan the full-screen QR code the teacher shows. Both are validated against the rehearsal time window | Sessions generated nightly, absentees marked automatically, holidays and ร.ด. exemptions respected | Live roster grouped by section, leave requests with teacher approval, per-session dashboard, Thai PDF reports |
 
 | Layer | Stack |
 |---|---|
-| **Frontend** | React 18 · TypeScript · Vite · Tailwind CSS + shadcn/ui (Radix) · Zustand · TanStack Query · Recharts · `@react-pdf/renderer` · `html5-qrcode` · `qrcode.react` |
+| **Frontend** | React 18 · TypeScript · Vite · Tailwind CSS + shadcn/ui (Radix) · Zustand · TanStack Query · Recharts · `@react-pdf/renderer` · `qrcode.react` |
 | **Backend** | Supabase — PostgreSQL · Auth · Realtime · Storage · Row Level Security · `pg_cron` |
 | **Hosting** | Netlify (static SPA) |
 
@@ -45,7 +45,7 @@ A mobile-first web app (installable PWA) that lets marching band students check 
    - [Daily session generation](#2-daily-session-generation-automatic)
    - [GPS check-in](#3-gps-check-in-student)
    - [QR check-in](#4-qr-check-in-student)
-   - [Absence reason (excused)](#5-absence-reason-excused)
+   - [Leave requests](#5-leave-requests-teacher-approval)
    - [Automatic absent marking](#6-automatic-absent-marking)
    - [Teacher override](#7-teacher-override)
    - [Streaks and badges](#8-streaks-and-badges)
@@ -63,17 +63,29 @@ A mobile-first web app (installable PWA) that lets marching band students check 
 ## Features
 
 **Students**
-- Check in with GPS (must be inside the configured radius of the music room)
+- One-tap check-in. The button finds your location and checks you in if you are inside the allowed radius of the music room.
+  - Before the window opens, it shows when check-in starts.
+  - After the on-time cut-off, it warns that you will be marked late.
+  - Under the button: in-area distance, or how far outside you are.
 - Check in by scanning the QR code the teacher displays (GPS is verified as well)
-- Submit a reason when unable to attend (status becomes *excused*)
+- Request leave with a reason. The status becomes *excused* only after a teacher approves it.
+- Dashboard: today's sessions with what each one allows right now, a quick check-in card, and personal stats
 - Attendance history and personal calendar
 - Streak counter and badges for consecutive attendance
 - Profile picture upload, change / reset password
 
 **Teachers**
-- Live attendance per session (Supabase Realtime)
-- Override any student's status with a note
-- Show a per-session QR code for check-in
+- Dashboard card for each of today's sessions:
+  - here / expected and late
+  - "not checked yet" while open, "absent" after it closes
+  - opens that session's roster
+- Live roster per session (Supabase Realtime):
+  - grouped by section ("Brass 11/32")
+  - filters (all / not here yet / here / leave) and search
+  - students who need attention first
+- Approve or reject leave requests
+- Change a student's status. The dialog starts from the current status, and the change can be undone from the toast.
+- Full-screen QR presenter with a live "here / expected" counter and the latest arrivals
 - Add extra rehearsal sessions, manage holidays and term breaks
 - Manage the student list and promote the academic year (year level + 1, M.6 → graduated)
 - Reports for every section, per-student calendar, PDF export
@@ -88,6 +100,7 @@ A mobile-first web app (installable PWA) that lets marching band students check 
 - Rehearsal sessions are generated every night by `pg_cron`
 - Students who never check in are marked *absent* automatically after the window closes
 - Streaks and badges are recalculated by a database trigger on every attendance change
+- Pages re-evaluate time-dependent state every 30 seconds, so check-in opens without a reload
 
 ---
 
@@ -97,9 +110,8 @@ A mobile-first web app (installable PWA) that lets marching band students check 
 flowchart LR
     subgraph Client["Browser / PWA (React + Vite)"]
         UI["Pages<br/>Dashboard · Attendance · Schedule<br/>Reports · Students · Admin · Profile"]
-        Hooks["Hooks<br/>useAuth · useAttendance · useGPS<br/>useTerm · useSupabaseQueries"]
+        Hooks["Hooks<br/>useAuth · useAttendance · useGPS · useLeaveRequests<br/>useTerm · useNow · useSupabaseQueries"]
         Store["Zustand authStore<br/>(user, profile, theme — persisted)"]
-        SW["Service Worker<br/>app-shell cache · push"]
         UI --> Hooks --> Store
     end
 
@@ -128,6 +140,11 @@ flowchart LR
 
 The browser talks to Supabase directly with the public anon key. **All authorization is enforced by Row Level Security policies in the database**, not by the frontend. Route guards in the React app (`ProtectedRoute`, `AdminRoute`) are only for UX.
 
+Pages are code-split per route. `@react-pdf/renderer` loads only when a PDF is exported, and a retry screen appears if a page chunk fails to load after a deploy.
+
+> [!NOTE]
+> `public/sw.js` (app-shell cache and push notifications) is **not registered** by the app yet, so offline caching and push are inactive. The PWA manifest still allows *Add to Home Screen*.
+
 ---
 
 ## Roles and permissions
@@ -136,7 +153,9 @@ The browser talks to Supabase directly with the public anon key. **All authoriza
 |---|:--:|:--:|:--:|
 | Check in (GPS / QR) for self | Yes | Yes | Yes |
 | Read own attendance, streak, badges | Yes | Yes | Yes |
+| Request leave for a session (with a reason) | Yes | — | — |
 | Read everyone's attendance | No | Yes | Yes |
+| Approve / reject leave requests | No | Yes | Yes |
 | Override / insert attendance for others | No | Yes | Yes |
 | Display session QR code | No | Yes | Yes |
 | Manage sessions, holidays, term breaks | No | Yes | Yes |
@@ -158,7 +177,7 @@ Frontend routes:
 
 ## Attendance rules
 
-All times are **Asia/Bangkok**. The rules live in one place on the client (`ATTENDANCE_RULES` in [`src/lib/utils.ts`](src/lib/utils.ts)) and are mirrored by the SQL functions.
+All times are **Asia/Bangkok**. The rules live in one place on the client (`ATTENDANCE_RULES` in [`src/lib/utils.ts`](src/lib/utils.ts)) and are mirrored by the SQL functions. `getAttendanceWindowState()` (before / open / after) is the single check used by the dashboard, the attendance page and check-in itself. The schedule page builds its on-time and late text from the same rules. `lateUntil` must match the `auto_mark_absent` cron times.
 
 | Session | Days | Check-in opens | Present until | Late until | Absent after |
 |---|---|---|---|---|---|
@@ -263,7 +282,7 @@ sequenceDiagram
 
     S->>P: Tap "Check in"
     P->>G: getCurrentPosition()
-    alt cached ≤ 5 min
+    alt cached ≤ 5 min and was in range
         G-->>P: cached position
     else
         G->>B: getCurrentPosition(highAccuracy, 30 s timeout)
@@ -300,6 +319,8 @@ sequenceDiagram
 
 Notes:
 
+- There is one button. Its status line shows the distance result, and it warns when the check-in will count as late. The dashboard quick check-in uses the same flow.
+- A cached position is reused only if it was inside the area, so a student who walks into range gets a fresh reading.
 - The location and radius come from the `gps_settings` table (admin editable). If it cannot be loaded, the app falls back to a built-in default.
 - The accuracy tolerance avoids rejecting students standing at the edge of the radius on a poor GPS fix.
 - The window and status are computed on the **client clock converted to Bangkok time**. The database policy only verifies that `student_id = auth.uid()`; it does not re-validate the time. Treat the GPS/QR checks as a deterrent for honest use, not as tamper-proof.
@@ -308,11 +329,11 @@ Notes:
 
 ### 4. QR check-in (student)
 
-The teacher opens **QR Code** on a session card in `/attendance`. The dialog renders `https://<host>/qr/<qr_token>`. A student scans it with the phone camera, which opens the page in the browser.
+The teacher taps **เปิด QR เช็คชื่อ** on a session card in `/attendance`. A full-screen presenter (`QRPresenter`) shows a large QR code for `https://<host>/qr/<qr_token>`, a live "here / expected" counter, the last five arrivals, and a warning if the session is not accepting check-ins. Teachers can also switch to browser fullscreen to project it. A student scans it with the phone camera, which opens the page in the browser.
 
 ```mermaid
 flowchart TD
-    T["Teacher: session card → QR Code<br/>QRCodeSVG(origin + /qr/ + qr_token)"] --> Scan["Student scans with phone camera"]
+    T["Teacher: session card → full-screen QR<br/>QRCodeSVG(origin + /qr/ + qr_token)"] --> Scan["Student scans with phone camera"]
     Scan --> Open["Opens /qr/:token (public route)"]
     Open --> Auth{"Signed in?"}
     Auth -- no --> NA["not_auth → button to /login"]
@@ -336,22 +357,23 @@ The QR token proves the student is holding the code the teacher showed; the GPS 
 
 ---
 
-### 5. Absence reason (excused)
+### 5. Leave requests (teacher approval)
+
+Students cannot mark themselves excused. They send a request with a reason, then ask their teacher to approve it in the app.
 
 ```mermaid
 flowchart TD
-    S["Student opens a session without checking in"] --> Btn["Tap 'Submit reason'"]
-    Btn --> V{"Reason text empty?"}
-    V -- yes --> Err["Toast: please enter a reason"]
-    V -- no --> Ex{"Record exists<br/>for (session, student)?"}
-    Ex -- yes --> U["UPDATE reason, status = 'excused'"]
-    Ex -- no --> I["INSERT status = 'excused', reason"]
-    U --> Re["refetch my records"]
-    I --> Re
-    Re --> Rt["Realtime pushes the change to teachers' screens"]
+    S["Student: today's session<br/>not checked in, or marked absent"] --> Btn["Tap 'ขอลา', type a reason"]
+    Btn --> Up["UPSERT leave_requests<br/>status = 'pending'"]
+    Up --> P["Card: 'waiting for teacher approval'<br/>student can edit or cancel"]
+    Up --> RT["Realtime → teacher roster<br/>'ขอลา N' + badge on the student"]
+    RT --> T{"Teacher opens the status dialog"}
+    T -- approve --> A["UPSERT attendance_records<br/>status = 'excused', reason,<br/>teacher_override = true"]
+    A --> D1["leave_requests.status = 'approved'"]
+    T -- reject --> D2["leave_requests.status = 'rejected'<br/>attendance unchanged"]
 ```
 
-An *excused* record is not overwritten by the automatic absent job because that job only inserts rows for students with no record at all.
+RLS (migration `024`) lets students insert, edit and delete only their own **pending** requests. Only teachers and admins can approve or reject them. An approved *excused* record is not overwritten by the automatic absent job, because that job only inserts rows for students with no record.
 
 ---
 
@@ -368,7 +390,7 @@ flowchart TD
         Q1 --> Ins["INSERT absent for active, non-graduated students<br/>with is_in_club = true and no record yet<br/>ON CONFLICT DO NOTHING"]
     end
 
-    subgraph Client["Client — AttendancePage (best effort)"]
+    subgraph Client["Client — AttendancePage, teachers only (best effort)"]
         Tm["on mount + every 60 s"] --> MA["markAbsentOverdue(today)"]
         MA --> Over["sessions past their window"]
         Over --> Stu["all active, non-graduated students"]
@@ -379,7 +401,7 @@ flowchart TD
     Ups --> TG
 ```
 
-- The cron job is the source of truth. The client sweep gives teachers an up-to-date view right after the window closes.
+- The cron job is the source of truth. The client sweep gives teachers an up-to-date view right after the window closes. It runs only for teacher accounts, because RLS lets students read only their own rows.
 - Students with `is_in_club = false` are skipped by the SQL job (see the [ร.ด. exemption](#9-thursday-afternoon-รด-exemption)).
 
 ---
@@ -395,16 +417,21 @@ sequenceDiagram
     actor S as Student
 
     T->>P: Open session roster (useAllAttendance, realtime)
-    T->>P: Choose a student → Override
+    T->>P: Choose a student → status dialog
+    Note over P: Dialog preselects the current status<br/>and shows it. Save stays disabled until<br/>status or note changes
     T->>P: Pick status (present / late / absent / excused) + note
-    P->>DB: UPSERT attendance_records<br/>teacher_override = true, override_by = teacher.id,<br/>override_note, check_in_time = now() if present else null
+    P->>DB: UPSERT attendance_records<br/>teacher_override = true, override_by = teacher.id,<br/>override_note, check_in_time kept if present/late<br/>(now() only when there was none)
+    P-->>T: Toast "name: old → new" with Undo
+    opt Undo
+        P->>DB: restore the previous row (or delete it if there was none)
+    end
     Note over DB: RLS allows role IN ('admin','teacher')<br/>to insert/update other students' rows
     DB->>DB: trigger → recalc_student_streak()
     DB-->>P: Realtime event → roster refreshes
     DB-->>S: Realtime event → student's own list refreshes
 ```
 
-Overridden rows keep `teacher_override`, `override_by` and `override_note` so the change stays auditable.
+Overridden rows keep `teacher_override`, `override_by` and `override_note` so the change stays auditable. If the student has a pending leave request, the same dialog shows it with approve / reject buttons.
 
 ---
 
@@ -446,6 +473,7 @@ flowchart TD
     X --> X3["Web: filterOutRdExempt()<br/>removes it from statistics"]
     X --> X4["PDF: cell shows 'นศท.'<br/>instead of the real status"]
     X --> X5["auto_mark_absent()<br/>never inserts absent for them"]
+    X --> X6["Web: splitRdExempt()<br/>left out of headcounts on the dashboard,<br/>roster and QR presenter"]
 ```
 
 The rule is implemented in [`src/lib/attendanceExemption.ts`](src/lib/attendanceExemption.ts) and mirrored in migration `022`. If a dedicated `session_type` is introduced for this period, set `THURSDAY_AFTERNOON_SESSION_TYPES` (client) and change the view's `WHERE` clause (SQL) so both switch from the time heuristic to the type.
@@ -507,7 +535,7 @@ flowchart TD
     Agg --> Pdf["ExportReportDialog → AttendanceReportPDF<br/>@react-pdf/renderer, Sarabun font<br/>getPdfCellStatus() marks exempt cells 'นศท.'"]
 ```
 
-Thai fonts (Sarabun, Pridi) are bundled in `public/fonts/` so the PDF renders Thai without external requests.
+The Sarabun font is bundled in `public/fonts/` so the PDF renders Thai without external requests. The table header repeats on every page, and the symbol legend sits in each page footer.
 
 ---
 
@@ -525,6 +553,8 @@ erDiagram
     practice_sessions }o--o| academic_terms : "term_id"
     practice_sessions ||--o| streaks : "last_session_id (set null)"
     badges ||--o{ user_badges : "badge_id"
+    profiles ||--o{ leave_requests : "student_id"
+    practice_sessions ||--o{ leave_requests : "session_id (cascade)"
 
     profiles {
         uuid id PK "= auth.users.id"
@@ -573,11 +603,18 @@ erDiagram
         text code UK
         int threshold
     }
+    leave_requests {
+        uuid id PK
+        text reason
+        text status "pending | approved | rejected"
+        uuid decided_by
+        timestamptz decided_at
+    }
 ```
 
 Other tables: `holidays`, `holiday_ranges`, `gps_settings`, `schedule_overrides`, `notifications`. Storage bucket: `profile-pictures` (public read, authenticated write). View: `effective_attendance_records`.
 
-Key constraints: `UNIQUE(date, session_type)` on sessions and `UNIQUE(session_id, student_id)` on attendance records. These make every write an idempotent upsert.
+Key constraints: `UNIQUE(date, session_type)` on sessions, and `UNIQUE(session_id, student_id)` on attendance records and leave requests. These make every write an idempotent upsert.
 
 ### Migrations
 
@@ -604,6 +641,7 @@ Run the files in [`supabase/migrations/`](supabase/migrations/) **in numeric ord
 | `021_streaks_badges` | Streak/badge tables, function, trigger, RLS |
 | `022_thursday_rd_exemption` | `effective_attendance_records` view + streak update |
 | `023_fix_streak_session_fk` | `ON DELETE SET NULL` for `streaks.last_session_id` |
+| `024_leave_requests` | `leave_requests` table, RLS, realtime (required from v1.1.0) |
 
 > [!IMPORTANT]
 > Several of these redefine `create_daily_sessions()`; the highest-numbered definition wins. Because later files overwrite earlier ones, always run the full chain rather than cherry-picking.
@@ -618,26 +656,29 @@ src/
 ├── main.tsx
 ├── components/
 │   ├── admin/                      # SemesterManager, GPSSettingsManager
+│   ├── attendance/QRPresenter.tsx  # Full-screen QR with live counter
 │   ├── layout/AppLayout.tsx        # Shell, navigation, theme toggle
 │   ├── reports/                    # StudentCalendarReport, ExportReportDialog, AttendanceReportPDF
 │   ├── CheckInSuccessAnimation.tsx
 │   └── ui/                         # shadcn/ui primitives
 ├── hooks/
 │   ├── useAuth.ts                  # Sign in / out / password
-│   ├── useAttendance.ts            # checkIn, qrCheckIn, submitReason, markAbsentOverdue, realtime
-│   ├── useGPS.ts                   # Geolocation, haversine, 5-minute cache
+│   ├── useAttendance.ts            # checkIn, qrCheckIn, markAbsentOverdue, realtime roster
+│   ├── useLeaveRequests.ts         # Leave requests: submit, cancel, approve / reject
+│   ├── useNow.ts                   # Re-render every 30 s for time-based UI
+│   ├── useGPS.ts                   # Geolocation, haversine, 5-minute cache (in-range only)
 │   ├── useGPSSettings.ts           # Reads gps_settings
 │   ├── useTerm.ts                  # Academic terms
 │   └── useSupabaseQueries.ts       # React Query hooks (sessions, streaks, badges, reports)
 ├── lib/
 │   ├── supabase.ts                 # Supabase client
-│   ├── utils.ts                    # ATTENDANCE_RULES, status/window helpers, Bangkok time, haversine
-│   └── attendanceExemption.ts      # Thursday-afternoon ร.ด. rule
+│   ├── utils.ts                    # ATTENDANCE_RULES, getAttendanceWindowState, getErrorMessage, Bangkok time
+│   └── attendanceExemption.ts      # Thursday-afternoon ร.ด. rule, splitRdExempt
 ├── pages/                          # Dashboard, Attendance, QRCheckIn, Schedule, Reports,
 │                                   # Students, Admin, Profile, Login, Forgot/ResetPassword
 ├── store/authStore.ts              # Zustand (user, profile, theme), persisted
 └── types/index.ts
-public/                             # PWA manifest, service worker, icons, Thai fonts
+public/                             # PWA manifest, service worker (not registered), icons, Thai fonts
 supabase/migrations/                # SQL, run in numeric order
 ```
 
@@ -653,7 +694,7 @@ supabase/migrations/                # SQL, run in numeric order
 In **Database → Extensions**, enable **`pg_cron`** (needed for nightly sessions and auto-absent).
 
 ### 3. Run the migrations
-Open **SQL Editor** and run every file in `supabase/migrations/` **in numeric order** (`001` → `023`).
+Open **SQL Editor** and run every file in `supabase/migrations/` **in numeric order** (`001` → `024`).
 
 ### 4. Configure authentication
 1. **Authentication → Providers → Email**: turn off "Confirm email" if accounts are created by an admin and you do not want email confirmation.
@@ -682,7 +723,7 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-Other scripts: `npm run build` (type-check + build), `npm run preview`, `npm run lint`.
+Other scripts: `npm run build` (type-check + build), `npm run preview`. `npm run lint` currently fails because ESLint 9 needs an `eslint.config.js`, which the project does not have yet.
 
 > [!WARNING]
 > Only the **anon** key belongs in the frontend. Never put the `service_role` key in `.env`.
