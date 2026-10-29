@@ -12,11 +12,12 @@ import { Progress } from '@/components/ui/progress';
 import { useAuthStore } from '@/store/authStore';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useGPS } from '@/hooks/useGPS';
+import { useNow } from '@/hooks/useNow';
 import { toast } from '@/components/ui/use-toast';
 import { CheckInSuccessAnimation } from '@/components/CheckInSuccessAnimation';
 import {
   formatThaiDate, formatTime, getDayOfWeekThai,
-  isWithinAttendanceWindow, getTodayBangkok, getBangkokDateWithOffset
+  getAttendanceWindowState, getTodayBangkok, getBangkokDateWithOffset
 } from '@/lib/utils';
 import { SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import {
@@ -68,12 +69,12 @@ export default function DashboardPage() {
     ? Math.round(((stats.present + stats.late) / stats.total) * 100)
     : 0;
 
-  const now = new Date();
+  const now = useNow();
 
   // session ที่เปิดอยู่ตอนนี้ และนักเรียนยังไม่ได้เช็คชื่อ
   const openSession = !isTeacher
     ? todaySessions.find((s) => {
-        const isOpen = isWithinAttendanceWindow(s.session_type, undefined, s.start_time, s.end_time);
+        const isOpen = getAttendanceWindowState(s.session_type, s.start_time, s.end_time, now) === 'open';
         const already = myRecords.find((r) => r.session_id === s.id);
         return isOpen && !already;
       })
@@ -256,7 +257,7 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground text-center py-4">ไม่มีรอบซ้อมวันนี้</p>
             ) : (
               todaySessions.map(session => {
-                const isOpen = isWithinAttendanceWindow(session.session_type, undefined, session.start_time, session.end_time);
+                const isOpen = getAttendanceWindowState(session.session_type, session.start_time, session.end_time, now) === 'open';
                 const myRecord = myRecords.find(r => r.session_id === session.id);
                 return (
                   <div key={session.id} className={`flex items-center justify-between p-3 rounded-lg border ${isOpen ? 'border-brand-500/30 bg-brand-500/5' : 'border-border bg-muted/30'}`}>

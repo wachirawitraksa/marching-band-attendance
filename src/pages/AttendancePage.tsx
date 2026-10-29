@@ -15,12 +15,13 @@ import { useAttendance, markAbsentOverdue } from '@/hooks/useAttendance';
 import { useGPS } from '@/hooks/useGPS';
 import { useAllAttendance } from '@/hooks/useAttendance';
 import { useStudents } from '@/hooks/useSupabaseQueries';
+import { useNow } from '@/hooks/useNow';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import {
-  formatThaiDate, formatTime, getDayOfWeekThai, isWithinAttendanceWindow, isPastAttendanceWindow, getAvatarFallback, getTodayBangkok
+  formatThaiDate, formatTime, getDayOfWeekThai, getAttendanceWindowState, getAvatarFallback, getTodayBangkok
 } from '@/lib/utils';
 import { AttendanceRecord, AttendanceStatus, Profile, SessionType, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -42,7 +43,7 @@ export default function AttendancePage() {
   const [qrDialog, setQrDialog] = useState<{ open: boolean; sessionId: string; token: string }>({ open: false, sessionId: '', token: '' });
 
   const isTeacher = profile?.role === 'admin' || profile?.role === 'teacher';
-  const now = new Date();
+  const now = useNow();
 
   // Auto-mark absent สำหรับนักเรียนที่ไม่เช็คชื่อหลังหมดเวลา (ทำงานทุก 60 วินาที)
   useEffect(() => {
@@ -190,10 +191,6 @@ export default function AttendancePage() {
     }
   };
 
-  // helper สำหรับแสดง message ที่ถูกต้อง
-  const isPastWindow = (sessionType: SessionType) =>
-    isPastAttendanceWindow(sessionType);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -256,7 +253,8 @@ export default function AttendancePage() {
 
       {/* Sessions */}
       {sessions.map(session => {
-        const isOpen = isWithinAttendanceWindow(session.session_type);
+        const windowState = getAttendanceWindowState(session.session_type, session.start_time, session.end_time, now);
+        const isOpen = windowState === 'open';
         const myRecord = myRecords.find(r => r.session_id === session.id);
 
         return (
@@ -342,7 +340,7 @@ export default function AttendancePage() {
                   {!isOpen && !myRecord && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Info size={12} />
-                      {isPastWindow(session.session_type)
+                      {windowState === 'after'
                         ? 'หมดเวลาเช็คชื่อแล้ว — ระบบบันทึกเป็นขาดซ้อม'
                         : 'ยังไม่ถึงเวลาเช็คชื่อ'}
                     </p>

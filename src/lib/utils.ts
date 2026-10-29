@@ -158,6 +158,31 @@ export function isWithinAttendanceWindow(sessionType: SessionType, date?: Date, 
   return true; // ไม่มีเวลากำหนด = เปิดตลอด (ครูควบคุม)
 }
 
+export type AttendanceWindowState = 'before' | 'open' | 'after';
+
+/**
+ * สถานะช่วงเช็คชื่อของรอบซ้อม สำหรับ UI: ยังไม่เปิด / เปิดอยู่ / ปิดแล้ว
+ * ใช้กติกาเดียวกับที่ตอนบันทึกเช็คชื่อใช้ตรวจ (isWithinAttendanceWindow + เวลาเริ่ม–สิ้นสุดของซ้อมพิเศษ)
+ * ทุกหน้าที่แสดงว่า "เปิดอยู่" ต้องเรียกผ่านฟังก์ชันนี้ — เดิมหน้าเช็คชื่อไม่ได้ส่งเวลาของซ้อมพิเศษ
+ * ทำให้แสดงว่าเปิดทั้งที่ระบบปฏิเสธการเช็คชื่อ
+ */
+export function getAttendanceWindowState(
+  sessionType: SessionType,
+  startTime?: string,
+  endTime?: string,
+  base: Date = new Date(),
+): AttendanceWindowState {
+  if (isWithinAttendanceWindow(sessionType, base, startTime, endTime)) return 'open';
+  const minutes = getBangkokMinutesOfDay(base);
+  const rule = ATTENDANCE_RULES[sessionType];
+  if (rule) return minutes > rule.lateUntil ? 'after' : 'before';
+  if (endTime) {
+    const [h, m] = endTime.split(':').map(Number);
+    return minutes > h * 60 + m ? 'after' : 'before';
+  }
+  return 'open';
+}
+
 export function getStatusColor(status: AttendanceStatus): string {
   const colors: Record<AttendanceStatus, string> = {
     present: 'text-green-500 bg-green-500/10 border-green-500/30',
