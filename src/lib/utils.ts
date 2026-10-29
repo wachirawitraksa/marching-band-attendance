@@ -133,6 +133,13 @@ export function describeAttendanceRule(sessionType: SessionType): string | null 
   return `มาปกติถึง ${formatMinutes(rule.presentUntil)} · สายถึง ${formatMinutes(rule.lateUntil)} น.`;
 }
 
+/** เวลาที่เริ่มเปิดให้เช็คชื่อ ("05:00") — รอบที่มีกติกาใช้ rule.open, ซ้อมพิเศษใช้เวลาเริ่มของรอบ */
+export function getAttendanceOpenTime(sessionType: SessionType, startTime?: string): string | null {
+  const rule = ATTENDANCE_RULES[sessionType];
+  if (rule) return formatMinutes(rule.open);
+  return startTime ? startTime.slice(0, 5) : null;
+}
+
 /** คำนวณสถานะการเช็คชื่อจากเวลาไทยปัจจุบัน: present / late / absent */
 export function getCheckInStatus(
   sessionType: SessionType,

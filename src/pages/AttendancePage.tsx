@@ -2,12 +2,11 @@ import { getErrorMessage } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import {
   MapPin, QrCode, Clock, CheckCircle2, XCircle, AlertCircle,
-  Loader2, FileText, Navigation, RefreshCw, Info, UserCheck, ChevronDown
+  Loader2, FileText, RefreshCw, Info, UserCheck, ChevronDown
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAuthStore } from '@/store/authStore';
@@ -25,7 +24,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import {
-  formatThaiDate, formatTime, getDayOfWeekThai, getAttendanceWindowState, getAvatarFallback, getTodayBangkok
+  formatThaiDate, formatTime, getDayOfWeekThai, getAttendanceWindowState, getAttendanceOpenTime, getCheckInStatus, getAvatarFallback, getTodayBangkok
 } from '@/lib/utils';
 import { AttendanceRecord, AttendanceStatus, LeaveRequest, Profile, SessionType, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -48,12 +47,15 @@ export default function AttendancePage() {
   const isTeacher = profile?.role === 'admin' || profile?.role === 'teacher';
   const now = useNow();
 
-  // Auto-mark absent สำหรับนักเรียนที่ไม่เช็คชื่อหลังหมดเวลา (ทำงานทุก 60 วินาที)
+  // Auto-mark absent สำหรับนักเรียนที่ไม่เช็คชื่อหลังหมดเวลา (ทำงานทุก 60 วินาที) — สำรองให้ cron ฝั่ง server
+  // รันเฉพาะครู: บัญชีนักเรียนอ่านได้แค่แถวของตัวเอง (RLS) จึงเข้าใจว่าทุกคนยังไม่เช็ค แล้วพยายามบันทึกขาด
+  // ให้คนอื่นทั้งวง ซึ่ง RLS ปฏิเสธ (403 ทุกนาทีจากนักเรียนทุกคนที่เปิดหน้านี้)
   useEffect(() => {
+    if (!isTeacher) return;
     markAbsentOverdue(today);
     const timer = setInterval(() => markAbsentOverdue(today), 60_000);
     return () => clearInterval(timer);
-  }, [today]);
+  }, [today, isTeacher]);
 
   // Teacher override
   // current = record ตอนเปิด dialog (null = ยังไม่เช็ค) — ใช้ตั้งค่าเริ่มต้น, แสดงสถานะเดิม และย้อนกลับ
@@ -94,7 +96,8 @@ export default function AttendancePage() {
     if (checkingIn) return;
     setCheckingIn(sessionId);
     try {
-      const gpsData = await getCurrentPosition();
+      // ผลตำแหน่งที่ cache ไว้ใช้ได้เฉพาะตอนอยู่ในพื้นที่ — ถ้าเคยนอกพื้นที่/error ให้หาตำแหน่งใหม่ทุกครั้งที่กด
+      const gpsData = await getCurrentPosition(!inRange);
 
       // GPS permission denied → หยุดทันที แสดง toast เดียว
       if (gpsData.error) {
@@ -231,31 +234,6 @@ export default function AttendancePage() {
         </Button>
       </div>
 
-      {/* GPS status (student) */}
-      {!isTeacher && (
-        <>
-          <Alert variant={inRange ? 'success' : gpsError ? 'destructive' : 'info'}>
-            <Navigation size={16} />
-            <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
-              <span className="break-words">
-                {gpsLoading ? 'กำลังตรวจสอบตำแหน่ง...' :
-                  gpsError ? gpsError :
-                  lat ? (inRange ? `อยู่ในพื้นที่ (${distance} ม.)` : `นอกพื้นที่ (${distance} ม. จาก ${schoolLocation?.name || 'พื้นที่กำหนด'}`) :
-                    'กดเพื่อตรวจสอบตำแหน่ง GPS'}
-              </span>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => getCurrentPosition(true)} disabled={gpsLoading}>
-                {gpsLoading ? <Loader2 size={12} className="animate-spin" /> : 'ตรวจสอบ'}
-              </Button>
-            </AlertDescription>
-          </Alert>
-          {gpsError && (
-            <p className="text-xs text-muted-foreground">
-              หากยังไม่ได้รับอนุญาต ให้ตรวจสอบการตั้งค่าเบราว์เซอร์และอนุญาตตำแหน่งสำหรับเว็บไซต์นี้ บน Netlify จะต้องอยู่บน HTTPS เท่านั้น
-            </p>
-          )}
-        </>
-      )}
-
       {/* No sessions today */}
       {sessions.length === 0 && (
         <Card>
@@ -329,19 +307,41 @@ export default function AttendancePage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <Button
-                        className="flex-1 gap-2 bg-brand-500 hover:bg-brand-400 text-white"
-                        disabled={!isOpen || !!checkingIn}
-                        onClick={() => handleCheckIn(session.id)}
-                      >
-                        {checkingIn === session.id ? (
-                          <><Loader2 size={16} className="animate-spin" /> กำลังเช็คชื่อ...</>
-                        ) : (
-                          <><MapPin size={16} /> เช็คชื่อ (GPS)</>
-                        )}
-                      </Button>
-                    </div>
+                    isOpen ? (
+                      <div className="space-y-2">
+                        <Button
+                          className="w-full h-12 gap-2 bg-brand-500 hover:bg-brand-400 text-white text-base"
+                          disabled={!!checkingIn}
+                          onClick={() => handleCheckIn(session.id)}
+                        >
+                          {checkingIn === session.id ? (
+                            <><Loader2 size={18} className="animate-spin" /> {gpsLoading ? 'กำลังหาตำแหน่ง...' : 'กำลังเช็คชื่อ...'}</>
+                          ) : (
+                            <><MapPin size={18} /> เช็คชื่อ</>
+                          )}
+                        </Button>
+                        {/* ผลตรวจตำแหน่งล่าสุด — บอกเหตุผลถ้าเช็คไม่ได้ ไม่ต้องกดตรวจแยก */}
+                        <p className="text-xs text-muted-foreground" aria-live="polite">
+                          {gpsError ? (
+                            <span className="text-danger">{gpsError} แล้วกดเช็คชื่ออีกครั้ง</span>
+                          ) : lat !== null ? (
+                            inRange
+                              ? <span className="text-success">อยู่ในพื้นที่ · ห่าง {distance} ม.</span>
+                              : <span className="text-danger">อยู่นอกพื้นที่ · ห่าง {distance} ม. (ต้องไม่เกิน {schoolLocation?.allowedRadius ?? 200} ม. จาก{schoolLocation?.name || 'จุดซ้อม'})</span>
+                          ) : (
+                            'ระบบจะตรวจตำแหน่งให้ตอนกดเช็คชื่อ'
+                          )}
+                          {getCheckInStatus(session.session_type) === 'late' && (
+                            <span className="block text-warning mt-0.5">ตอนนี้เลยเวลามาปกติแล้ว เช็คชื่อจะนับเป็นสาย</span>
+                          )}
+                        </p>
+                      </div>
+                    ) : windowState === 'before' ? (
+                      <div className="flex h-12 items-center justify-center gap-2 rounded-md border border-dashed border-border text-sm text-muted-foreground">
+                        <Clock size={16} />
+                        เปิดเช็คชื่อ {getAttendanceOpenTime(session.session_type, session.start_time) ?? ''} น.
+                      </div>
+                    ) : null
                   )}
 
                   {(!myRecord || myRecord.status === 'absent') && profile && (
@@ -353,12 +353,10 @@ export default function AttendancePage() {
                     />
                   )}
 
-                  {!isOpen && !myRecord && (
+                  {windowState === 'after' && !myRecord && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Info size={12} />
-                      {windowState === 'after'
-                        ? 'หมดเวลาเช็คชื่อแล้ว — ระบบบันทึกเป็นขาดซ้อม'
-                        : 'ยังไม่ถึงเวลาเช็คชื่อ'}
+                      หมดเวลาเช็คชื่อแล้ว — ระบบบันทึกเป็นขาดซ้อม
                     </p>
                   )}
                 </div>
