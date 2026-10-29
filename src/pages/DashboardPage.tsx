@@ -61,9 +61,7 @@ export default function DashboardPage() {
     'ขาดซ้อม': d.absent,
   }));
 
-  const stats = isTeacher
-    ? (teacherTodayStats ?? { total: 0, present: 0, absent: 0, late: 0, excused: 0 })
-    : (studentStats ?? { total: 0, present: 0, absent: 0, late: 0, excused: 0 });
+  const stats = studentStats ?? { total: 0, present: 0, absent: 0, late: 0, excused: 0 };
   const loading = sessionsLoading;
 
   const presentRate = stats.total > 0
@@ -196,11 +194,82 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Stats cards — บอกขอบเขตของตัวเลขให้ชัด: ครู = วันนี้ทุกรอบ, นักเรียน = สะสมทั้งหมด */}
+      {/* ครู: สรุปทีละรอบ (มาแล้วกี่คน / สาย / ยังไม่เช็คหรือขาด / ลา) แทนตัวเลขรวมทุกรอบ */}
+      {isTeacher && (
+        <section aria-labelledby="today-heading" className="space-y-2">
+          <h2 id="today-heading" className="text-sm font-medium text-muted-foreground">รอบซ้อมวันนี้</h2>
+          {sessionsLoading ? (
+            <div className="h-28 rounded-lg bg-muted animate-pulse" />
+          ) : todaySessions.length === 0 ? (
+            <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">ไม่มีรอบซ้อมวันนี้</CardContent></Card>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {todaySessions.map(session => {
+                const windowState = getAttendanceWindowState(session.session_type, session.start_time, session.end_time, now);
+                const c = teacherTodayStats?.bySession[session.id] ?? { total: 0, present: 0, absent: 0, late: 0, excused: 0 };
+                const here = c.present + c.late;
+                const notChecked = Math.max(0, totalStudents - c.total);
+                const pct = totalStudents > 0 ? Math.round((here / totalStudents) * 100) : 0;
+                return (
+                  <Card key={session.id} className={windowState === 'open' ? 'border-brand-500/40' : ''}>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold">{SESSION_TYPE_LABELS[session.session_type]}</p>
+                            {windowState === 'open' && <Badge variant="brand" className="text-xs px-1.5 py-0 h-5">เปิดเช็คชื่อ</Badge>}
+                            {windowState === 'after' && <Badge variant="outline" className="text-xs px-1.5 py-0 h-5">ปิดแล้ว</Badge>}
+                          </div>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Clock size={10} /> {formatTime(session.start_time)} - {formatTime(session.end_time)}
+                          </p>
+                        </div>
+                        <Link to={`/attendance?session=${session.id}`}>
+                          <Button size="sm" variant="outline" className="h-8 text-xs gap-1">
+                            ดูรายชื่อ <ChevronRight size={12} />
+                          </Button>
+                        </Link>
+                      </div>
+
+                      {windowState === 'before' ? (
+                        <p className="text-sm text-muted-foreground">
+                          เปิดเช็คชื่อ {getAttendanceOpenTime(session.session_type, session.start_time)} น.
+                        </p>
+                      ) : (
+                        <>
+                          <div>
+                            <p className="text-2xl font-bold tabular-nums">
+                              {here}<span className="text-base font-medium text-muted-foreground">/{totalStudents}</span>
+                              <span className="ml-2 text-sm font-medium text-muted-foreground">มาแล้ว</span>
+                            </p>
+                            <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden" role="presentation">
+                              <div className="h-full rounded-full bg-success" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground tabular-nums">
+                            <span className="text-warning">สาย {c.late}</span>
+                            {' · '}
+                            {windowState === 'open'
+                              ? <span>ยังไม่เช็ค {notChecked}</span>
+                              : <span className="text-danger">ขาด {c.absent + notChecked}</span>}
+                            {' · '}
+                            <span className="text-info">ลา {c.excused}</span>
+                          </p>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* นักเรียน: สถิติสะสมของตัวเอง */}
+      {!isTeacher && (
       <section aria-labelledby="stats-heading" className="space-y-2">
-      <h2 id="stats-heading" className="text-sm font-medium text-muted-foreground">
-        {isTeacher ? 'สรุปวันนี้ · นับรวมทุกรอบ' : 'สถิติของฉัน · ทั้งหมด'}
-      </h2>
+      <h2 id="stats-heading" className="text-sm font-medium text-muted-foreground">สถิติของฉัน · ทั้งหมด</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="bg-success/5 border-success/20">
           <CardContent className="p-4">
@@ -235,22 +304,19 @@ export default function DashboardPage() {
         <Card className="bg-brand-500/5 border-brand-500/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">
-                {isTeacher ? 'นักเรียนทั้งหมด' : 'อัตราเข้าร่วม'}
-              </span>
-              {isTeacher ? <Users size={16} className="text-brand-text" /> : <TrendingUp size={16} className="text-brand-text" />}
+              <span className="text-xs text-muted-foreground">อัตราเข้าร่วม</span>
+              <TrendingUp size={16} className="text-brand-text" />
             </div>
-            <p className="text-2xl font-bold text-brand-text">
-              {isTeacher ? totalStudents : `${presentRate}%`}
-            </p>
+            <p className="text-2xl font-bold text-brand-text">{presentRate}%</p>
           </CardContent>
         </Card>
       </div>
       </section>
+      )}
 
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* Today's sessions */}
-        <Card>
+      <div className={`grid gap-4 ${isTeacher ? '' : 'md:grid-cols-2'}`}>
+        {/* Today's sessions (นักเรียน — ครูดูจากแถวต่อรอบด้านบน) */}
+        {!isTeacher && <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Calendar size={16} className="text-brand-text" />
@@ -296,19 +362,12 @@ export default function DashboardPage() {
                         <span className="text-xs text-muted-foreground">หมดเวลาเช็คชื่อ</span>
                       )
                     )}
-                    {isTeacher && (
-                      <Link to="/attendance">
-                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
-                          ดูผล <ChevronRight size={12} />
-                        </Button>
-                      </Link>
-                    )}
                   </div>
                 );
               })
             )}
           </CardContent>
-        </Card>
+        </Card>}
 
         {/* Attendance rate + chart */}
         <Card>

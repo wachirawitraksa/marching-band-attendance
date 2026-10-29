@@ -263,12 +263,21 @@ export function useTodayAttendanceSummary(sessionIds: string[]) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('effective_attendance_records')
-        .select('status')
+        .select('session_id, status')
         .in('session_id', sessionIds);
       if (error) throw error;
-      const s = { total: data?.length ?? 0, present: 0, absent: 0, late: 0, excused: 0 };
-      data?.forEach((r) => { s[r.status as keyof typeof s]++; });
-      return s;
+      type Counts = { total: number; present: number; absent: number; late: number; excused: number };
+      const empty = (): Counts => ({ total: 0, present: 0, absent: 0, late: 0, excused: 0 });
+      const s = empty();
+      // แยกต่อรอบด้วย — แดชบอร์ดครูแสดงทีละรอบ ไม่รวมรอบเช้ากับคาบชุมนุมเป็นตัวเลขเดียว
+      const bySession: Record<string, Counts> = {};
+      data?.forEach((r) => {
+        const key = r.status as keyof Omit<Counts, 'total'>;
+        s[key]++; s.total++;
+        const b = (bySession[r.session_id] ??= empty());
+        b[key]++; b.total++;
+      });
+      return { ...s, bySession };
     },
     enabled: sessionIds.length > 0,
     staleTime: 60 * 1000,

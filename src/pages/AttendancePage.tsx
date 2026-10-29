@@ -1,5 +1,6 @@
 import { getErrorMessage } from '@/lib/utils';
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   MapPin, QrCode, Clock, CheckCircle2, XCircle, AlertCircle,
   Loader2, FileText, RefreshCw, Info, UserCheck, ChevronDown, Search
@@ -47,6 +48,17 @@ export default function AttendancePage() {
 
   const isTeacher = profile?.role === 'admin' || profile?.role === 'teacher';
   const now = useNow();
+  // มาจากแดชบอร์ด "ดูรายชื่อ" ของรอบใด → กางรายชื่อรอบนั้นและเลื่อนไปหา
+  const [searchParams] = useSearchParams();
+  const focusSessionId = searchParams.get('session');
+  useEffect(() => {
+    if (!focusSessionId || loading) return;
+    // รอให้รายชื่อของรอบอื่นโหลดเสร็จก่อน ไม่งั้นหน้ายังสั้นเกินกว่าจะเลื่อนไปถึงการ์ด
+    const timer = setTimeout(() => {
+      document.getElementById(`session-${focusSessionId}`)?.scrollIntoView({ block: 'start' });
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [focusSessionId, loading]);
 
   // Auto-mark absent สำหรับนักเรียนที่ไม่เช็คชื่อหลังหมดเวลา (ทำงานทุก 60 วินาที) — สำรองให้ cron ฝั่ง server
   // รันเฉพาะครู: บัญชีนักเรียนอ่านได้แค่แถวของตัวเอง (RLS) จึงเข้าใจว่าทุกคนยังไม่เช็ค แล้วพยายามบันทึกขาด
@@ -252,7 +264,7 @@ export default function AttendancePage() {
         const myRecord = myRecords.find(r => r.session_id === session.id);
 
         return (
-          <Card key={session.id} className={isOpen ? 'border-brand-500/40 shadow-md' : ''}>
+          <Card key={session.id} id={`session-${session.id}`} className={`scroll-mt-4 ${isOpen ? 'border-brand-500/40 shadow-md' : ''}`}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -367,7 +379,7 @@ export default function AttendancePage() {
               {isTeacher && (
                 <TeacherAttendanceView
                   sessionId={session.id}
-                  defaultExpanded={isOpen || sessions.length === 1}
+                  defaultExpanded={isOpen || sessions.length === 1 || focusSessionId === session.id}
                   onOverride={(studentId, studentName, current, leave) => openOverride(session.id, studentId, studentName, current, leave)}
                 />
               )}
