@@ -230,7 +230,9 @@ export function useAllAttendance(sessionId?: string) {
   useEffect(() => {
     if (!sessionId) return;
     const channel = supabase
-      .channel(`session-${sessionId}`)
+      // ชื่อ channel ต้องไม่ซ้ำ: รายชื่อกับหน้าจอ QR ฟังรอบเดียวกันพร้อมกัน
+      // (supabase คืน channel เดิมถ้าชื่อซ้ำ แล้ว .on() หลัง subscribe() จะ throw)
+      .channel(`session-${sessionId}-${Math.random().toString(36).slice(2, 8)}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

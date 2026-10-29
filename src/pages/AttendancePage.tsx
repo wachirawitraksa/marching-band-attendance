@@ -30,7 +30,7 @@ import {
 } from '@/lib/utils';
 import { AttendanceRecord, AttendanceStatus, LeaveRequest, Profile, SessionType, SESSION_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRPresenter } from '@/components/attendance/QRPresenter';
 import { CheckInSuccessAnimation } from '@/components/CheckInSuccessAnimation';
 
 export default function AttendancePage() {
@@ -44,7 +44,7 @@ export default function AttendancePage() {
 
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [qrDialog, setQrDialog] = useState<{ open: boolean; sessionId: string; token: string }>({ open: false, sessionId: '', token: '' });
+  const [qrSessionId, setQrSessionId] = useState<string | null>(null);
 
   const isTeacher = profile?.role === 'admin' || profile?.role === 'teacher';
   const now = useNow();
@@ -278,10 +278,12 @@ export default function AttendancePage() {
                 </div>
                 {isTeacher && (
                   <Button
-                    size="sm" variant="outline" className="h-8 gap-1.5 text-xs"
-                    onClick={() => setQrDialog({ open: true, sessionId: session.id, token: session.qr_token })}
+                    size="sm"
+                    variant={isOpen ? 'brand' : 'outline'}
+                    className="gap-1.5 shrink-0"
+                    onClick={() => setQrSessionId(session.id)}
                   >
-                    <QrCode size={13} /> QR Code
+                    <QrCode size={15} /> {isOpen ? 'เปิด QR เช็คชื่อ' : 'QR Code'}
                   </Button>
                 )}
               </div>
@@ -388,25 +390,17 @@ export default function AttendancePage() {
         );
       })}
 
-      {/* QR Dialog (teacher) */}
-      <Dialog open={qrDialog.open} onOpenChange={(o) => !o && setQrDialog({ open: false, sessionId: '', token: '' })}>
-        <DialogContent className="max-w-xs">
-          <DialogHeader>
-            <DialogTitle className="text-center">QR Code เช็คชื่อ</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center gap-3 py-4">
-            <div className="p-4 bg-white rounded-xl">
-              <QRCodeSVG
-                value={`${window.location.origin}/qr/${qrDialog.token}`}
-                size={200}
-                level="H"
-                includeMargin
-              />
-            </div>
-            <p className="text-xs text-muted-foreground text-center">ให้นักเรียนสแกน QR Code นี้เพื่อเช็คชื่อ</p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* QR เต็มจอ (teacher) */}
+      {(() => {
+        const qrSession = sessions.find(x => x.id === qrSessionId) ?? null;
+        return (
+          <QRPresenter
+            session={qrSession}
+            windowState={qrSession ? getAttendanceWindowState(qrSession.session_type, qrSession.start_time, qrSession.end_time, now) : 'before'}
+            onClose={() => setQrSessionId(null)}
+          />
+        );
+      })()}
 
       {/* Teacher override dialog */}
       {overrideDialog && (
