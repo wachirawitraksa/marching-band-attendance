@@ -141,7 +141,7 @@ export function SemesterManager() {
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <div className={`w-2 h-2 rounded-full ${term.is_current ? 'bg-brand-400 animate-pulse' : 'bg-muted-foreground/30'}`} />
+                <div className={`w-2 h-2 rounded-full ${term.is_current ? 'bg-brand-400 motion-safe:animate-pulse' : 'bg-muted-foreground/30'}`} />
                 <div>
                   <p className="text-sm font-medium">{term.label}</p>
                   <p className="text-xs text-muted-foreground">

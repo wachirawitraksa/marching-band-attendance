@@ -224,7 +224,7 @@ export default function AttendancePage() {
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-base">{SESSION_TYPE_LABELS[session.session_type]}</CardTitle>
                   {isOpen && (
-                    <Badge variant="gold" className="animate-pulse text-xs">เปิดเช็คชื่อ</Badge>
+                    <Badge variant="gold" className="motion-safe:animate-pulse text-xs">เปิดเช็คชื่อ</Badge>
                   )}
                   {session.is_override && (
                     <Badge variant="info" className="text-xs">ซ้อมพิเศษ</Badge>

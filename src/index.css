@@ -101,7 +101,7 @@
   .status-dot-excused { @apply bg-blue-500; }
 
   .music-float { animation: float 3s ease-in-out infinite; }
-  .page-enter  { animation: fade-in 0.25s ease-out; }
+  .page-enter  { animation: fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
 
   .glass {
     background: hsl(var(--card) / 0.8);
@@ -137,6 +137,30 @@
   animation: noteFloat 4s ease-in-out infinite;
   pointer-events: none;
   user-select: none;
+}
+
+/* Reduced motion: เหลือแค่ fade / เปลี่ยนสี — ตัดการเคลื่อนที่, ลูปตกแต่ง และ smooth scroll
+   (feedback ที่ยืนยันการกระทำยังอยู่ครบ: toast, dialog, สถานะ check-in) */
+@keyframes fadeOnly {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animated-bg { animation: none; }
+  .note-particle { display: none; }
+  .page-enter,
+  .animate-fade-in { animation-name: fadeOnly; }
+  /* tailwindcss-animate (dialog / drawer / toast / dropdown): เก็บ fade ไว้ ตัด zoom และ slide */
+  .animate-in,
+  .animate-out {
+    --tw-enter-scale: 1 !important;
+    --tw-enter-translate-x: 0 !important;
+    --tw-enter-translate-y: 0 !important;
+    --tw-exit-scale: 1 !important;
+    --tw-exit-translate-x: 0 !important;
+    --tw-exit-translate-y: 0 !important;
+  }
 }
 
 @media (max-width: 768px) {

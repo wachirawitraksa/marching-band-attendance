@@ -479,7 +479,7 @@ export default function SchedulePage() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="text-sm font-semibold">{r.label}</p>
                                 {isActive && (
-                                  <Badge className="text-xs bg-holiday/20 text-holiday border-holiday/30 animate-pulse">
+                                  <Badge className="text-xs bg-holiday/20 text-holiday border-holiday/30 motion-safe:animate-pulse">
                                     กำลังปิดเทอม
                                   </Badge>
                                 )}
